@@ -30,9 +30,6 @@ namespace RagnarockEditor.VR
         [Tooltip("Минимальная скорость молота для регистрации удара (м/с)")]
         [SerializeField] private float _minHitVelocity = 1.5f;
 
-        [Tooltip("Минимальный интервал между ударами (сек) — debounce")]
-        [SerializeField] private float _debounceTime = 0.03f;
-
         /// <summary>Индекс барабана (0-3).</summary>
         public int DrumIndex => _drumIndex;
 
@@ -54,7 +51,6 @@ namespace RagnarockEditor.VR
         /// <summary>Событие: по барабану ударили.</summary>
         public UnityEvent<int, float> OnDrumHit; // drumIndex, velocity
 
-        private float _lastHitTime = -1f;
         private MaterialPropertyBlock _propBlock;
         private float _flashTimer;
         private bool _isFlashing;
@@ -99,15 +95,13 @@ namespace RagnarockEditor.VR
         /// <param name="hammerVelocity">Скорость молота в момент удара</param>
         public void RegisterHit(float hammerVelocity)
         {
-            // Debounce
-            float currentTime = Time.time;
-            if (currentTime - _lastHitTime < _debounceTime)
-                return;
+            TryRegisterHit(hammerVelocity);
+        }
 
+        public bool TryRegisterHit(float hammerVelocity)
+        {
             if (hammerVelocity < _minHitVelocity)
-                return;
-
-            _lastHitTime = currentTime;
+                return false;
 
             // Визуальная обратная связь
             FlashDrumHead();
@@ -122,6 +116,7 @@ namespace RagnarockEditor.VR
             OnDrumHit?.Invoke(_drumIndex, hammerVelocity);
 
             Debug.Log($"[DrumController] Удар по барабану {_drumIndex}, скорость={hammerVelocity:F1} м/с");
+            return true;
         }
 
         /// <summary>

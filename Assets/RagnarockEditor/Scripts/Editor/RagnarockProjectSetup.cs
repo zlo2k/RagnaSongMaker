@@ -298,8 +298,7 @@ namespace RagnarockEditor.Editor
             so.FindProperty("_hoopMaterial").objectReferenceValue = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialPath}/Hammer_Mat.mat");
             so.FindProperty("_defaultMaterial").objectReferenceValue = headMat;
             so.FindProperty("_hitMaterial").objectReferenceValue = hitFlashMat;
-            so.FindProperty("_minHitVelocity").floatValue = 1.5f;
-            so.FindProperty("_debounceTime").floatValue = 0.08f;
+            so.FindProperty("_minHitVelocity").floatValue = 0.6f;
             so.ApplyModifiedProperties();
 
             PrefabUtility.SaveAsPrefabAsset(drum, path);

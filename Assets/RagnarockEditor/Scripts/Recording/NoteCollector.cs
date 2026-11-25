@@ -16,12 +16,8 @@ namespace RagnarockEditor.Recording
         [SerializeField] private RecordManager _recordManager;
         [SerializeField] private VR.DrumManager _drumManager;
 
-        /// <summary>Минимальный интервал между ударами по одному барабану (debounce).</summary>
-        [SerializeField] private float _drumDebounceTime = 0.08f;
-
         private RecordSession _session;
         private bool _selfSubscribed;
-        private float[] _lastHitTimes = new float[4] { -1f, -1f, -1f, -1f };
 
         /// <summary>Сырые удары, записанные в текущем сеансе.</summary>
         public int HitCount => _session != null ? _session.TotalRawHits : 0;
@@ -90,14 +86,9 @@ namespace RagnarockEditor.Recording
             if (_recordManager != null && _recordManager.CurrentState != RecordManager.State.Recording)
                 return;
 
-            int index = Mathf.Clamp(drumIndex, 0, _lastHitTimes.Length - 1);
+            int index = Mathf.Clamp(drumIndex, 0, 3);
             float time = Mathf.Max(0f, timeSeconds);
 
-            // Debounce по каждому барабану отдельно.
-            if (time - _lastHitTimes[index] < _drumDebounceTime)
-                return;
-
-            _lastHitTimes[index] = time;
             _session.AddRawHit(time, index);
 
             Debug.Log($"[NoteCollector] Удар зафиксирован: барабан={index}, t={time:F3}с");
@@ -113,20 +104,6 @@ namespace RagnarockEditor.Recording
 
             if (_session != null)
                 _session.RemoveHitsAfter(timeSeconds);
-
-            // Сбрасываем debounce, чтобы удары после перемотки не отбрасывались.
-            for (int i = 0; i < _lastHitTimes.Length; i++)
-            {
-                if (_lastHitTimes[i] > timeSeconds)
-                    _lastHitTimes[i] = -1f;
-            }
-        }
-
-        /// <summary>Сбрасывает состояние debounce (начало нового дубля).</summary>
-        public void ResetDebounce()
-        {
-            for (int i = 0; i < _lastHitTimes.Length; i++)
-                _lastHitTimes[i] = -1f;
         }
 
         /// <summary>
