@@ -4,36 +4,16 @@ using UnityEngine;
 namespace RagnarockEditor.VR
 {
     /// <summary>
-    /// Детект удара молота по барабану.
-    ///
-    /// Работает не по «объёму», а по пересечению горизонтальной плоскости над барабаном:
-    /// удар засчитывается ровно один раз за проход головки сверху вниз через плоскость
-    /// (y = центр головки + _hitPlane). Геометрия молота (одна/две грани, толщина)
-    /// роли не играет — используется одна точка HeadPosition.
-    ///
-    /// После удара молот нужно ПОДНЯТЬ выше _rearmHeight, иначе следующие проходы
-    /// игнорируются. Это исключает двойные срабатывания от отскока, проскальзывания
-    /// сквозь барабан и «второй грани».
-    ///
-    /// Дополнительно:
-    ///  - удар только сверху (вертикальная скорость вниз);
-    ///  - регистрирует только ближайший к головке барабан (сосед не задевается);
-    ///  - кулдаун на барабан;
-    ///  - кулдаун и перезарядка сбрасываются при подъёме.
+    /// Регистрирует проход бойка через мембрану сверху вниз. Радиус зоны удара
+    /// проверяется в точке пересечения двух последовательных позиций бойка.
     /// </summary>
     public class DrumHitDetector : MonoBehaviour
     {
         [SerializeField] private DrumController _drumController;
 
         [Header("Плоскость удара")]
-        [Tooltip("Высота плоскости удара над центром головки барабана, метры.")]
-        [SerializeField] private float _hitPlane = 0.03f;
-
         [Tooltip("Радиус пятна удара, метры. Меньше половины шага между барабанами (0.178 м).")]
         [SerializeField] private float _hitRadius = 0.16f;
-
-        [Tooltip("Ниже этой высоты относительно детектора удар не считается (молот уже прошёл сквозь).")]
-        [SerializeField] private float _bottomTolerance = 0.12f;
 
         [Tooltip("На сколько нужно поднять молот над плоскостью, чтобы он снова мог ударить, метры.")]
         [SerializeField] private float _rearmHeight = 0.09f;
@@ -51,8 +31,8 @@ namespace RagnarockEditor.VR
 
         private readonly List<HammerController> _hammers = new List<HammerController>();
         private readonly HashSet<HammerController> _disarmed = new HashSet<HammerController>();
-        private readonly Dictionary<HammerController, float> _previousY =
-            new Dictionary<HammerController, float>();
+        private readonly Dictionary<HammerController, Vector3> _previousTip =
+            new Dictionary<HammerController, Vector3>();
 
         private DrumManager _drumManager;
         private float _nextRescan;
@@ -93,7 +73,8 @@ namespace RagnarockEditor.VR
                 PrunePreviousPositions();
             }
 
-            Vector3 center = transform.position;
+            Vector3 center = _drumController.StrikeCenter;
+            Vector3 normal = _drumController.transform.up;
             float radiusSqr = _hitRadius * _hitRadius;
 
             for (int i = 0; i < _hammers.Count; i++)
@@ -103,21 +84,12 @@ namespace RagnarockEditor.VR
                     continue;
 
                 Vector3 headPosition = hammer.HeadPosition;
-                Vector3 delta = headPosition - center;
-                float horizontalSqr = delta.x * delta.x + delta.z * delta.z;
-                float currentY = delta.y;
+                bool hasPrevious = _previousTip.TryGetValue(hammer, out Vector3 previous);
+                _previousTip[hammer] = headPosition;
+                if (!hasPrevious) continue;
 
-                float previousY;
-
-                if (!_previousY.TryGetValue(hammer, out previousY))
-                {
-                    // Первый кадр для этого молота: запоминаем высоту, но не считаем удар,
-                    // чтобы «телепорт» внутрь зоны не дал ложного срабатывания.
-                    _previousY[hammer] = currentY;
-                    continue;
-                }
-
-                _previousY[hammer] = currentY;
+                float currentY = Vector3.Dot(headPosition - center, normal);
+                float previousY = Vector3.Dot(previous - center, normal);
 
                 // Подняли молот — снова «заряжен» и кулдаун больше не мешает
                 if (currentY > _rearmHeight)
@@ -127,26 +99,23 @@ namespace RagnarockEditor.VR
                     continue;
 
                 // Нужен именно проход сверху вниз через плоскость
-                if (currentY > _hitPlane || previousY <= _hitPlane)
+                if (currentY > 0f || previousY <= 0f)
                     continue;
 
-                // Молот уже провалился ниже барабана — это не удар
-                if (currentY < -_bottomTolerance)
-                    continue;
-
-                if (horizontalSqr > radiusSqr)
+                Vector3 contact = Vector3.Lerp(previous, headPosition, previousY / (previousY - currentY));
+                if ((contact - center).sqrMagnitude > radiusSqr)
                     continue;
 
                 Vector3 velocity = hammer.Velocity;
 
-                if (velocity.y > -_minDownSpeed)
+                if (Vector3.Dot(velocity, normal) > -_minDownSpeed)
                     continue;
 
                 if (velocity.magnitude < _minSpeed)
                     continue;
 
                 // Только ближайший барабан: один замах не заденет соседний
-                if (!IsClosestDrum(headPosition))
+                if (!IsClosestDrum(contact))
                 {
                     _disarmed.Add(hammer);
                     continue;
@@ -188,10 +157,7 @@ namespace RagnarockEditor.VR
                 if (drum == null)
                     continue;
 
-                Vector3 position = drum.transform.position;
-                float dx = position.x - headPosition.x;
-                float dz = position.z - headPosition.z;
-                float sqr = dx * dx + dz * dz;
+                float sqr = (drum.StrikeCenter - headPosition).sqrMagnitude;
 
                 if (sqr < bestSqr)
                 {
@@ -205,19 +171,19 @@ namespace RagnarockEditor.VR
 
         private void PrunePreviousPositions()
         {
-            if (_previousY.Count == 0)
+            if (_previousTip.Count == 0)
                 return;
 
             var stale = new List<HammerController>();
 
-            foreach (var pair in _previousY)
+            foreach (var pair in _previousTip)
             {
                 if (pair.Key == null)
                     stale.Add(pair.Key);
             }
 
             for (int i = 0; i < stale.Count; i++)
-                _previousY.Remove(stale[i]);
+                _previousTip.Remove(stale[i]);
         }
     }
 }

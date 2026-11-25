@@ -17,6 +17,7 @@ namespace RagnarockEditor.VR
 
         [Header("Визуал")]
         [SerializeField] private MeshRenderer _drumHeadRenderer;
+        [SerializeField] private Material _hoopMaterial;
         [SerializeField] private Material _defaultMaterial;
         [SerializeField] private Material _hitMaterial;
         [SerializeField] private float _hitFlashDuration = 0.1f;
@@ -34,6 +35,12 @@ namespace RagnarockEditor.VR
 
         /// <summary>Индекс барабана (0-3).</summary>
         public int DrumIndex => _drumIndex;
+
+        // Top face of the prefab's built-in cylinder (local Y = +1).
+        public Vector3 StrikeCenter => _drumHeadRenderer != null
+            ? _drumHeadRenderer.transform.TransformPoint(Vector3.up)
+            : transform.position;
+        public Vector3 RuneCenter => StrikeCenter + transform.up * (DiscVisual.Thickness * 0.5f);
         /// <summary>
         /// Задаёт индекс барабана. Вызывается DrumManager при создании/расстановке:
         /// в префабе Drum.prefab индекс всегда 0, и без этого все удары
@@ -59,6 +66,15 @@ namespace RagnarockEditor.VR
 
             if (_audioSource == null)
                 _audioSource = GetComponent<AudioSource>();
+
+            var body = transform.Find("Body");
+            if (body != null && body.TryGetComponent<MeshFilter>(out var filter) &&
+                body.TryGetComponent<MeshRenderer>(out var shell))
+            {
+                var wood = shell.sharedMaterial;
+                filter.sharedMesh = DrumShell.SharedMesh;
+                shell.sharedMaterials = new[] { wood, _hoopMaterial != null ? _hoopMaterial : wood, _defaultMaterial };
+            }
 
             _propBlock = new MaterialPropertyBlock();
         }
@@ -100,7 +116,7 @@ namespace RagnarockEditor.VR
             PlayHitSound(hammerVelocity);
 
             // Как в игре: от барабана улетает кружок в плоскости его верха, прочь от игрока
-            HitDiscEffect.Spawn(transform.position + Vector3.up * 0.1f, _drumIndex, hammerVelocity);
+            HitDiscEffect.Spawn(RuneCenter, transform.rotation, _drumIndex, hammerVelocity);
 
             // Событие
             OnDrumHit?.Invoke(_drumIndex, hammerVelocity);

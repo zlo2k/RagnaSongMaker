@@ -28,6 +28,8 @@ namespace RagnarockEditor.Data
         /// <summary>Максимальный правдоподобный рост игрока (м).</summary>
         public const float MaxPlayerHeight = 2.5f;
 
+        public int LayoutVersion = 1;
+
         /// <summary>Рост игрока в метрах.</summary>
         public float PlayerHeight = 1.75f;
 
@@ -38,13 +40,13 @@ namespace RagnarockEditor.Data
         public float DrumHeight = 0.9f;
 
         /// <summary>Общая ширина расстановки 4-х барабанов (м).</summary>
-        public float TotalWidth = 1.6f;
+        public float TotalWidth = 1.08f;
 
         /// <summary>Радиус дуги (0 = ровная линия).</summary>
-        public float ArcRadius = 0.3f;
+        public float ArcRadius = 0f;
 
         /// <summary>Угол наклона поверхности барабана к игроку (градусы).</summary>
-        public float DrumTiltAngle = 10f;
+        public float DrumTiltAngle = 8f;
 
         /// <summary>Имя профиля.</summary>
         public string ProfileName = "Default";
@@ -62,9 +64,9 @@ namespace RagnarockEditor.Data
                 PlayerHeight = 1.75f,
                 DistanceToDrums = 0.8f,
                 DrumHeight = 0.9f,
-                TotalWidth = 1.6f,
-                ArcRadius = 0.3f,
-                DrumTiltAngle = 10f,
+                TotalWidth = 1.08f,
+                ArcRadius = 0f,
+                DrumTiltAngle = 8f,
                 ProfileName = "Default",
                 LastCalibrated = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             };
@@ -209,7 +211,16 @@ namespace RagnarockEditor.Data
             DrumCalibrationProfile profile;
             try
             {
-                profile = JsonUtility.FromJson<DrumCalibrationProfile>(json);
+                profile = new DrumCalibrationProfile { LayoutVersion = 0 };
+                JsonUtility.FromJsonOverwrite(json, profile);
+                if (profile.LayoutVersion == 0)
+                {
+                    // Older calibration derived spacing and arc from reach.
+                    profile.TotalWidth = 1.08f;
+                    profile.ArcRadius = 0f;
+                    profile.DrumTiltAngle = 8f;
+                    profile.LayoutVersion = 1;
+                }
             }
             catch (Exception e)
             {

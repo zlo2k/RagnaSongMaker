@@ -257,8 +257,8 @@ namespace RagnarockEditor.Editor
             GameObject body = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             body.name = "Body";
             body.transform.SetParent(drum.transform);
-            body.transform.localPosition = Vector3.zero;
-            body.transform.localScale = new Vector3(0.35f, 0.075f, 0.35f);
+            body.transform.localPosition = new Vector3(0f, -0.075f, 0f);
+            body.transform.localScale = new Vector3(0.35f, 0.15f, 0.35f);
 
             var bodyRenderer = body.GetComponent<MeshRenderer>();
             var drumMat = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialPath}/Drum_Mat.mat");
@@ -286,7 +286,7 @@ namespace RagnarockEditor.Editor
 
             // Добавляем компоненты
             drum.AddComponent<DrumController>();
-            var hitDetector = drum.AddComponent<DrumHitDetector>();
+            // DrumSceneBootstrap installs the detector on Head.
 
             // Настраиваем DrumController
             var drumCtrl = drum.GetComponent<DrumController>();
@@ -295,6 +295,7 @@ namespace RagnarockEditor.Editor
             // Сериализованные поля задаются через SerializedObject
             var so = new SerializedObject(drumCtrl);
             so.FindProperty("_drumHeadRenderer").objectReferenceValue = headRenderer;
+            so.FindProperty("_hoopMaterial").objectReferenceValue = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialPath}/Hammer_Mat.mat");
             so.FindProperty("_defaultMaterial").objectReferenceValue = headMat;
             so.FindProperty("_hitMaterial").objectReferenceValue = hitFlashMat;
             so.FindProperty("_minHitVelocity").floatValue = 1.5f;
