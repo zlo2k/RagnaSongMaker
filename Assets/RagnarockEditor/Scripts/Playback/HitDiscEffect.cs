@@ -44,7 +44,7 @@ namespace RagnarockEditor.Playback
             effect._scale = Mathf.Lerp(0.85f, 1.15f, Mathf.InverseLerp(0.6f, 7f, velocity));
             effect._color = DiscVisual.DrumColor(drumIndex);
 
-            DiscVisual.ApplyColor(effect._renderer, effect._color, 1f);
+            DiscVisual.ApplyColor(effect._renderer, effect._color, 0f);
 
             effect.transform.position = position;
             effect.transform.rotation = laneRotation;
@@ -90,11 +90,8 @@ namespace RagnarockEditor.Playback
             // Размер постоянный. Появление на границе и исчезновение — только прозрачностью.
             transform.localScale = _baseScale * _scale;
 
-            float alpha;
-            if (t > FadeOutStart)
-                alpha = Mathf.Clamp01((1f - t) / (1f - FadeOutStart));
-            else
-                alpha = 1f;
+            float alpha = Mathf.SmoothStep(0f, 1f, _elapsed / .09f)
+                        * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(FadeOutStart, 1f, t)));
 
             DiscVisual.ApplyColor(_renderer, _color, alpha);
 

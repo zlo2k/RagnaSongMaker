@@ -136,7 +136,7 @@ namespace RagnarockEditor.VR
                 if (_previewProgress != null)
                     _previewProgress.SetProgress(progress);
 
-                if (_previewSeek != null && (_playback.IsPlaying || _playback.IsPaused))
+                if (_previewSeek != null && !_previewSeek.IsDragging && (_playback.IsPlaying || _playback.IsPaused))
                     _previewSeek.SetValueSilent(progress);
             }
         }
@@ -147,7 +147,7 @@ namespace RagnarockEditor.VR
         /// </summary>
         private void UpdateBpmSlider()
         {
-            if (_bpmSlider == null || _bpmEditor == null)
+            if (_bpmSlider == null || _bpmSlider.IsDragging || _bpmEditor == null)
                 return;
 
             float target = _bpmEditor.BpmNormalized;

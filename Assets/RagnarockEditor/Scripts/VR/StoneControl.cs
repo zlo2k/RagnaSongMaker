@@ -1,15 +1,11 @@
 using System;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace RagnarockEditor.VR
 {
     /// <summary>
     /// Оживляет объёмный каменный контрол из StoneControls: двигает заливку и ручку
     /// по значению 0..1, принимает клик по точке попадания луча.
-    ///
-    /// Штатные узлы Fill/Handle из FBX скрываются, а поверх рисуются свои заливка
-    /// и ручка — так не зависим от их пивотов и масштаба модели.
     /// </summary>
     public class StoneControl : MonoBehaviour
     {
@@ -32,15 +28,24 @@ namespace RagnarockEditor.VR
         public float Value => _value;
         public Kind ControlKind => _kind;
 
-        private Transform _fillOverlay;
-        private Transform _handleOverlay;
-        private Material _fillMaterial;
-        private Material _handleMaterial;
-        private float _min;
-        private float _length;
-        private float _crossA;
-        private float _crossB;
-        private float _lossyScale = 1f;
+        private Transform _fill;
+        private Transform _handle;
+        private Vector3 _fullScale;
+        private int _scaleAxis;
+        private float _start, _end, _handleOffset;
+        private Vector3 Axis => _vertical ? Vector3.up : Vector3.right;
+        public bool IsDragging { get; private set; }
+
+        public bool BeginDrag()
+        {
+            if (_kind != Kind.Slider || IsDragging || _fill == null) return false;
+            IsDragging = true;
+            return true;
+        }
+
+        public void EndDrag() => IsDragging = false;
+        private void OnDisable() => EndDrag();
+
         private bool _on = true;
 
         private void Awake()
@@ -91,178 +96,79 @@ namespace RagnarockEditor.VR
             if (_kind != Kind.Slider)
                 return;
 
-            Vector3 local = transform.InverseTransformPoint(worldPoint);
-            float position = _vertical ? local.y : local.x;
-            float value = Mathf.InverseLerp(_min, _min + _length, position);
-
-            if (_invert)
-                value = 1f - value;
-
-            SetValue(value);        }
-
-        // ------------------------------------------------------------ построение
+            float position = Vector3.Dot(transform.InverseTransformPoint(worldPoint), Axis);
+            float fraction = Mathf.InverseLerp(_start, _end, position);
+            float value = _invert ? 1f - fraction : fraction;
+            if (!Mathf.Approximately(_value, value)) SetValue(value);
+        }
 
         private void Build()
         {
-            if (_kind == Kind.Toggle)
-                return;
+            if (_kind == Kind.Toggle) return;
+            _fill = FindDeep(transform, "Fill");
+            _handle = FindDeep(transform, "Handle");
+            var rail = FindDeep(transform, "Rail");
+            if (!_fill || !rail) { _fill = null; return; }
+            var fillMesh = _fill.GetComponent<MeshFilter>();
+            var railMesh = rail.GetComponent<MeshFilter>();
+            if (!fillMesh || !railMesh) { _fill = null; return; }
 
-            Transform fill = FindDeep(transform, "Fill");
-            Transform handle = FindDeep(transform, "Handle");
-
-            if (fill != null)
+            // FBX axes may be rotated or reflected relative to the board.
+            // Work in board space for input and mesh-local space for scaling.
+            var axis = Axis;
+            var toBoard = transform.worldToLocalMatrix * rail.localToWorldMatrix;
+            Bounds bounds = railMesh.sharedMesh.bounds;
+            float middle = Vector3.Dot(toBoard.MultiplyPoint3x4(bounds.center), axis);
+            float half = 0f;
+            for (int i = 0; i < 3; i++)
             {
-                var renderer = fill.GetComponentInChildren<Renderer>();
-                if (renderer != null)
-                    _fillMaterial = renderer.sharedMaterial;
-
-                fill.gameObject.SetActive(false);
+                Vector3 extent = Vector3.zero;
+                extent[i] = bounds.extents[i];
+                half += Mathf.Abs(Vector3.Dot(toBoard.MultiplyVector(extent), axis));
             }
 
-            if (handle != null)
+            var fillToBoard = transform.worldToLocalMatrix * _fill.localToWorldMatrix;
+            var size = fillMesh.sharedMesh.bounds.size;
+            float longest = 0f;
+            for (int i = 0; i < 3; i++)
             {
-                var renderer = handle.GetComponentInChildren<Renderer>();
-                if (renderer != null)
-                    _handleMaterial = renderer.sharedMaterial;
-
-                handle.gameObject.SetActive(false);
+                Vector3 edge = Vector3.zero;
+                edge[i] = size[i];
+                float length = Mathf.Abs(Vector3.Dot(fillToBoard.MultiplyVector(edge), axis));
+                if (length > longest) { longest = length; _scaleAxis = i; }
             }
-
-            if (_fillMaterial == null)
-                _fillMaterial = CreateMaterial(new Color(0.26f, 0.62f, 0.57f, 1f));
-
-            if (_handleMaterial == null)
-                _handleMaterial = CreateMaterial(new Color(0.98f, 0.95f, 0.88f, 1f));
-
-            if (!TryGetLocalAxisBounds(fill, handle, out _min, out _length, out _crossA, out _crossB))
-                return;
-
-            _lossyScale = Mathf.Max(0.0001f, transform.lossyScale.x);
-
-            _fillOverlay = CreateOverlay(PrimitiveType.Cube, "FillOverlay", _fillMaterial);
-            _handleOverlay = _kind == Kind.Slider
-                ? CreateOverlay(PrimitiveType.Sphere, "HandleOverlay", _handleMaterial)
-                : null;
+            if (half <= 0f || longest <= 0f) { _fill = null; return; }
+            // The exported Fill pivot is the empty end of the rail.
+            float pivot = Vector3.Dot(transform.InverseTransformPoint(_fill.position), axis);
+            _start = middle + (pivot < middle ? -half : half);
+            _end = 2f * middle - _start;
+            _fullScale = _fill.localScale;
+            _fullScale[_scaleAxis] *= 2f * half / longest;
+            if (_handle)
+            {
+                var mesh = _handle.GetComponent<MeshFilter>();
+                if (mesh) _handleOffset = Vector3.Dot(transform.InverseTransformVector(
+                    _handle.TransformVector(mesh.sharedMesh.bounds.center)), axis);
+            }
         }
 
-        /// <summary>Границы модели в локальных координатах без скрытых Fill/Handle.</summary>
-        private bool TryGetLocalAxisBounds(Transform fill, Transform handle,
-            out float min, out float length, out float crossA, out float crossB)
+        private void MoveAlongRail(Transform part, float coordinate)
         {
-            min = 0f;
-            length = 0f;
-            crossA = 0f;
-            crossB = 0f;
-
-            var renderers = GetComponentsInChildren<Renderer>(true);
-            bool has = false;
-            Bounds world = default;
-
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                var renderer = renderers[i];
-                if (renderer == null)
-                    continue;
-
-                if (fill != null && renderer.transform.IsChildOf(fill))
-                    continue;
-
-                if (handle != null && renderer.transform.IsChildOf(handle))
-                    continue;
-
-                if (!has)
-                {
-                    world = renderer.bounds;
-                    has = true;
-                }
-                else
-                {
-                    world.Encapsulate(renderer.bounds);
-                }
-            }
-
-            if (!has)
-                return false;
-
-            Vector3 a = transform.InverseTransformPoint(world.min);
-            Vector3 b = transform.InverseTransformPoint(world.max);
-
-            Vector3 localMin = Vector3.Min(a, b);
-            Vector3 localMax = Vector3.Max(a, b);
-
-            float axisMin = _vertical ? localMin.y : localMin.x;
-            float axisMax = _vertical ? localMax.y : localMax.x;
-
-            float margin = Mathf.Max(0.005f, (axisMax - axisMin) * 0.06f);
-            min = axisMin + margin;
-            length = Mathf.Max(0.01f, axisMax - axisMin - margin * 2f);
-
-            crossA = (localMin.y + localMax.y) * 0.5f;
-            crossB = localMax.z + 0.005f;
-
-            if (_vertical)
-                crossA = (localMin.x + localMax.x) * 0.5f;
-
-            return true;
-        }
-
-        private Transform CreateOverlay(PrimitiveType type, string name, Material material)
-        {
-            var go = GameObject.CreatePrimitive(type);
-            go.name = name;
-
-            var collider = go.GetComponent<Collider>();
-            if (collider != null)
-                Destroy(collider);
-
-            go.transform.SetParent(transform, false);
-
-            var renderer = go.GetComponent<Renderer>();
-            if (renderer != null)
-            {
-                renderer.sharedMaterial = material;
-                renderer.shadowCastingMode = ShadowCastingMode.Off;
-                renderer.receiveShadows = false;
-            }
-
-            return go.transform;
+            var local = transform.InverseTransformPoint(part.position);
+            local += Axis * (coordinate - Vector3.Dot(local, Axis));
+            part.position = transform.TransformPoint(local);
         }
 
         private void Apply()
         {
-            if (_kind == Kind.Toggle || _fillOverlay == null)
-                return;
-
-            float fill = Mathf.Clamp01(_value) * _length;
-            float thickness = 0.02f / _lossyScale;
-            float cross = 0.02f / _lossyScale;
-            float visual = _invert ? _length - fill : fill;
-
-            if (_vertical)
-            {
-                _fillOverlay.localScale = new Vector3(cross, Mathf.Max(0.0001f, fill), thickness);
-                _fillOverlay.localPosition = new Vector3(_crossA, _min + visual + fill * 0.5f, _crossB);
-            }
-            else
-            {
-                _fillOverlay.localScale = new Vector3(Mathf.Max(0.0001f, fill), cross, thickness);
-                _fillOverlay.localPosition = new Vector3(_min + visual + fill * 0.5f, _crossA, _crossB);
-            }
-
-            _fillOverlay.gameObject.SetActive(fill > 0.001f);
-
-            if (_handleOverlay == null)
-                return;
-
-            float handleSize = 0.045f / _lossyScale;
-            _handleOverlay.localScale = Vector3.one * handleSize;
-
-            float handleOffset = (_invert ? 1f - _value : _value) * _length;
-
-            if (_vertical)
-                _handleOverlay.localPosition = new Vector3(_crossA, _min + handleOffset, _crossB);
-            else
-                _handleOverlay.localPosition = new Vector3(_min + handleOffset, _crossA, _crossB);
+            if (!_fill) return;
+            float fraction = Mathf.Clamp01(_value);
+            var scale = _fullScale;
+            scale[_scaleAxis] *= fraction;
+            _fill.localScale = scale;
+            MoveAlongRail(_fill, _invert ? Mathf.Lerp(_end, _start, fraction) : _start);
+            _fill.gameObject.SetActive(fraction > 0f);
+            if (_handle) MoveAlongRail(_handle, Mathf.Lerp(_start, _end, _invert ? 1f-fraction : fraction) - _handleOffset);
         }
 
         private static Transform FindDeep(Transform root, string name)
@@ -280,21 +186,5 @@ namespace RagnarockEditor.VR
             return null;
         }
 
-        private static Material CreateMaterial(Color color)
-        {
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null)
-                shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null)
-                shader = Shader.Find("Standard");
-
-            var material = new Material(shader);
-            if (material.HasProperty("_BaseColor"))
-                material.SetColor("_BaseColor", color);
-            if (material.HasProperty("_Color"))
-                material.SetColor("_Color", color);
-
-            return material;
-        }
     }
 }

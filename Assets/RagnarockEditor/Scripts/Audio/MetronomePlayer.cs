@@ -31,6 +31,7 @@ namespace RagnarockEditor.Audio
 
         private float _bpm = 120f;
         private bool _isPlaying;
+        private bool _volumeChanged;
         private int _beatCount;
         private Coroutine _metronomeCoroutine;
 
@@ -58,8 +59,22 @@ namespace RagnarockEditor.Audio
             {
                 _volume = Mathf.Clamp01(value);
                 PlayerPrefs.SetFloat(VolumeKey, _volume);
-                PlayerPrefs.Save();
+                _volumeChanged = true;
             }
+        }
+
+        private void OnApplicationPause(bool paused)
+        {
+            if (paused) SaveVolume();
+        }
+
+        private void OnDisable() => SaveVolume();
+
+        private void SaveVolume()
+        {
+            if (!_volumeChanged) return;
+            PlayerPrefs.Save();
+            _volumeChanged = false;
         }
 
         private void Awake()
