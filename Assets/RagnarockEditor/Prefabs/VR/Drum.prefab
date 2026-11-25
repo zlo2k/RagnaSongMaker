@@ -48,6 +48,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RagnarockEditor.VR.DrumController
   _drumIndex: 0
   _drumHeadRenderer: {fileID: 6563602894600151390}
+  _hoopMaterial: {fileID: 2100000, guid: c2b4b02aac669ff42b2f7f1d2f5d0c8b, type: 2}
   _defaultMaterial: {fileID: 2100000, guid: 13e3e120f4c7db242986a2276803eb55, type: 2}
   _hitMaterial: {fileID: 2100000, guid: 8d9717f4b829bbc43bd442ce92d1f6eb, type: 2}
   _hitFlashDuration: 0.1
@@ -200,8 +201,8 @@ Transform:
   m_GameObject: {fileID: 2497030294436553603}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.35, y: 0.075, z: 0.35}
+  m_LocalPosition: {x: 0, y: -0.075, z: 0}
+  m_LocalScale: {x: 0.35, y: 0.15, z: 0.35}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2761995253655556966}

@@ -276,11 +276,8 @@ namespace RagnarockEditor.VR
                 _drumConfig.DrumHeight = drumHeight;
                 _drumConfig.DistanceFromPlayer = distance;
 
-                // Ширину и дугу выводим из измеренной дистанции, чтобы расстановка
-                // оставалась в зоне досягаемости (0.8 м → 1.6 м ширины, как в дефолте).
-                _drumConfig.TotalWidth = Mathf.Clamp(distance * 2f, 0.8f, 2.5f);
-                _drumConfig.ArcRadius = Mathf.Clamp(distance * 0.375f, 0f, 1f);
-                _drumConfig.DrumTiltAngle = Mathf.Clamp(_drumConfig.DrumTiltAngle, 0f, 30f);
+                // Reach moves the drum bank as a unit; the four lanes keep their spacing.
+                _drumConfig.ArcRadius = 0f;
             }
             else
             {

@@ -46,6 +46,7 @@ namespace RagnarockEditor.Playback
         private bool _isActive;
         private int _drumIndex = -1;
         private int _noteIndex = -1;
+        private Quaternion _laneRotation;
         private float _spinAngle;
         private float _impactTimer;
 
@@ -120,8 +121,13 @@ namespace RagnarockEditor.Playback
         /// </summary>
         public void Activate(Vector3 startPosition, Vector3 targetPosition, int drumIndex, int noteIndex)
         {
-            ResolveRenderer();
+            Activate(startPosition, targetPosition, drumIndex, noteIndex, Quaternion.identity);
+        }
 
+        public void Activate(Vector3 startPosition, Vector3 targetPosition, int drumIndex, int noteIndex, Quaternion laneRotation)
+        {
+            ResolveRenderer();
+            _laneRotation = laneRotation;
             _startPosition = startPosition;
             _targetPosition = targetPosition;
 
@@ -136,7 +142,7 @@ namespace RagnarockEditor.Playback
             _fadeInTimer = Mathf.Max(0.01f, _fadeInDuration);
 
             transform.position = startPosition;
-            transform.rotation = Quaternion.identity;
+            transform.rotation = _laneRotation;
             transform.localScale = BaseScale;
 
             ApplyDrumColor(drumIndex >= 0 ? drumIndex : noteIndex);
@@ -187,7 +193,7 @@ namespace RagnarockEditor.Playback
                 _spinAngle += _spinSpeed * dt;
                 if (_spinAngle > 360f)
                     _spinAngle -= 360f;
-                transform.rotation = Quaternion.Euler(0f, _spinAngle, 0f);
+                transform.rotation = _laneRotation * Quaternion.Euler(0f, _spinAngle, 0f);
             }
 
             // плавное появление на границе

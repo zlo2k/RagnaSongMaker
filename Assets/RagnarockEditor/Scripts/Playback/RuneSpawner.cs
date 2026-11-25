@@ -32,8 +32,6 @@ namespace RagnarockEditor.Playback
         [Tooltip("Дистанция, с которой руна вылетает в сторону игрока (по направлению от игрока), метры.")]
         [SerializeField] private float _approachDistance = 2.2f;
 
-        [Tooltip("Высота руны над точкой барабана, метры — руны летят в плоскости над барабанами.")]
-        [SerializeField] private float _hoverHeight = 0.1f;
 
         [Tooltip("Длительность подсветки барабана при попадании, секунды.")]
         [SerializeField] private float _drumHighlightDuration = 0.2f;
@@ -46,7 +44,7 @@ namespace RagnarockEditor.Playback
 
         private const float FallbackDistance = 0.8f;
         private const float FallbackHeight = 0.9f;
-        private const float FallbackWidth = 1.6f;
+        private const float FallbackWidth = 1.08f;
 
         /// <summary>Руна достигла барабана: (noteIndex, drumIndex).</summary>
         public event Action<int, int> OnRuneHit;
@@ -177,10 +175,12 @@ namespace RagnarockEditor.Playback
 
             // Как в игре: руна летит по палубе в плоскости над барабанами —
             // от дальней точки в сторону игрока, а не падает сверху.
-            Vector3 target = GetDrumPosition(drumIndex) + Vector3.up * _hoverHeight;
-            Vector3 awayFromPlayer = GetAwayDirection(target);
-            Vector3 start = target + awayFromPlayer * Mathf.Max(0.5f, _approachDistance);
-            start.y = target.y;
+            var drum = _drumManager != null ? _drumManager.Drums[drumIndex] : null;
+            Quaternion lane = drum != null ? drum.transform.rotation :
+                Quaternion.LookRotation(DeckOrientation.Forward, Vector3.up) * Quaternion.Euler(-8f, 0f, 0f);
+            Vector3 target = drum != null ? drum.RuneCenter :
+                GetDrumPosition(drumIndex) + lane * Vector3.up * 0.1f;
+            Vector3 start = target + lane * Vector3.forward * Mathf.Max(0.5f, _approachDistance);
 
             ActiveRune entry = GetEntry();
             entry.Visual = visual;
@@ -190,7 +190,7 @@ namespace RagnarockEditor.Playback
             entry.SpawnTime = noteTime - jumpTime;
             entry.Impacted = false;
 
-            visual.Activate(start, target, drumIndex, noteIndex);
+            visual.Activate(start, target, drumIndex, noteIndex, lane);
             _active.Add(entry);
         }
 
@@ -300,12 +300,6 @@ namespace RagnarockEditor.Playback
         }
 
         // ---------------------------------------------------------- Внутреннее
-
-        /// <summary>Направление «вперёд по палубе» — общее для всех рун, поэтому они летят параллельно.</summary>
-        private Vector3 GetAwayDirection(Vector3 target)
-        {
-            return DeckOrientation.Forward;
-        }
 
         private void ResolveReferences()        {
             if (_drumManager == null)

@@ -73,14 +73,14 @@ namespace RagnarockEditor.VR
             }
 
             Vector3 baseForward = _xrOrigin.forward;
-            Vector3 baseRight = _xrOrigin.right;
+
             Vector3 playerPos = _xrOrigin.position;
 
             // Игнорируем наклон головы — барабаны на полу
             baseForward.y = 0f;
             baseForward.Normalize();
-            baseRight.y = 0f;
-            baseRight.Normalize();
+            if (baseForward.sqrMagnitude < 0.001f) baseForward = Vector3.forward;
+            Vector3 baseRight = Vector3.Cross(Vector3.up, baseForward);
 
             float halfWidth = _config.TotalWidth * 0.5f;
             float spacing = _config.TotalWidth / 3f;
@@ -109,7 +109,7 @@ namespace RagnarockEditor.VR
             }
 
             // Поворот: наклон к игроку
-            DrumRotation = Quaternion.Euler(_config.DrumTiltAngle, 0f, 0f);
+            DrumRotation = Quaternion.LookRotation(baseForward, Vector3.up) * Quaternion.Euler(-_config.DrumTiltAngle, 0f, 0f);
         }
 
         /// <summary>
@@ -125,7 +125,7 @@ namespace RagnarockEditor.VR
             for (int i = 0; i < 4; i++)
             {
                 Gizmos.DrawWireSphere(DrumPositions[i], _config.DrumDiameter * 0.5f);
-                Gizmos.DrawRay(DrumPositions[i], Quaternion.Euler(_config.DrumTiltAngle, 0f, 0f) * Vector3.up * 0.3f);
+                Gizmos.DrawRay(DrumPositions[i], DrumRotation * Vector3.up * 0.3f);
             }
         }
     }
