@@ -43,7 +43,7 @@ namespace RagnarockEditor.VR
                 {
                     if ((File.GetAttributes(source) & FileAttributes.ReparsePoint) != 0) continue;
                     string name = Path.GetFileName(source);
-                    var entry = zip.CreateEntry(name, CompressionLevel.Fastest);
+                    var entry = zip.CreateEntry(name, System.IO.Compression.CompressionLevel.Fastest);
                     using var input = File.OpenRead(source);
                     using var output = entry.Open();
                     input.CopyTo(output);
