@@ -1,0 +1,18 @@
+{
+    "name": "RagnarockEditor.Scripts",
+    "rootNamespace": "RagnarockEditor",
+    "references": [
+        "Unity.XR.Interaction.Toolkit",
+        "Unity.XR.Management",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fc03b02bf28b9a4181fbea52b1c9882, type: 3}
+  m_Name: AppConfig
+  m_EditorClassIdentifier: Assembly-CSharp::RagnarockEditor.Core.AppConfig
+  MasterVolume: 0.8
+  MetronomeVolume: 0.7
+  AudioLatencyCompensation: 0.05
+  HapticIntensity: 1
+  HapticEnabled: 1
+  DefaultSnapThreshold: 0.15
+  DefaultSnapDivision: 4
+  DefaultDrumDistance: 0.8
+  DefaultDrumHeight: 0.9
+  DefaultDrumWidth: 1.6
+  Language: 30

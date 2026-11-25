@@ -1,0 +1,43 @@
+# Нормализация переводов строк в текстовых ассетах Unity
+* text=auto
+
+*.cs        text diff=csharp
+*.shader    text
+*.compute   text
+*.hlsl      text
+*.css       text
+*.js        text
+*.json      text
+*.xml       text
+*.md        text
+*.txt       text
+*.asmdef    text
+*.rsp       text
+*.mk        text
+*.c         text
+*.h         text
+
+# Ассеты Unity — тоже текст (YAML), но не показываем их в диффах как код
+*.unity     text
+*.prefab    text
+*.asset     text
+*.mat       text
+*.controller text
+*.meta      text eol=lf
+
+# Бинарные файлы
+*.fbx       binary
+*.obj       binary
+*.blend     binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.psd       binary
+*.tga       binary
+*.wav       binary
+*.mp3       binary
+*.ogg       binary
+*.dll       binary
+*.so        binary
+*.zip       binary
+*.apk       binary

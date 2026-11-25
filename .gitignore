@@ -1,0 +1,72 @@
+# ---------------------------------------------------------------
+#  Unity (стандартный .gitignore + правила этого проекта)
+#  Проект: RagnarockSongMaker — VR-редактор ритм-карт для Ragnarock
+# ---------------------------------------------------------------
+
+# Каталоги, которые Unity создаёт сама
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+/[Aa]ssetStoreTools*
+/[Pp]rofilerCaptures/
+/ragnaGod_BurstDebugInformation_DoNotShip/
+/.utmp/
+/.vs/
+/.idea/
+/.vscode/
+
+# Результаты сборки
+*.apk
+*.aab
+*.unitypackage
+*.keystore
+*.jks
+
+# Сгенерированные IDE-файлы
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.VC.opendb
+
+# Крэш-дампы и служебное
+sysinfo.txt
+crashlytics-build.properties
+*.stackdump
+*.tmp
+Thumbs.db
+desktop.ini
+
+# Логи прогонов фиксера и съёмки кадров
+Logs/
+
+# Нативные сборки: только исходники, без артефактов
+/NativeBuild/**/libs/
+/NativeBuild/**/obj/
+/NativeBuild/**/*.o
+/NativeBuild/**/*.a
+
+# Layer Lab GUI Basic Button Pack — пакет из Asset Store,
+# его нельзя распространять в открытом репозитории.
+# Импортируется локально (Window → Package Manager → My Assets).
+/Assets/Layer Lab/
+
+# ---------------------------------------------------------------
+#  ВАЖНО: файлы .meta и папки ассетов в Assets/ НЕ игнорируются —
+#  без них Unity потеряет связи и сцены сломаются.
+# ---------------------------------------------------------------
