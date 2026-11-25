@@ -21,9 +21,6 @@ namespace RagnarockEditor.Playback
         public const float Thickness = 0.02f;
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
-        private static readonly int ColorId = Shader.PropertyToID("_Color");
-        private static readonly int CullId = Shader.PropertyToID("_Cull");
-        private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
 
         private static readonly MaterialPropertyBlock Block = new MaterialPropertyBlock();
 
@@ -114,12 +111,6 @@ namespace RagnarockEditor.Playback
 
             renderer.GetPropertyBlock(Block);
             Block.SetColor(BaseColorId, color);
-            Block.SetColor(ColorId, color);
-
-            // свечение гасим вместе с прозрачностью, иначе диск «светится» уже невидимым
-            if (renderer.sharedMaterial != null && renderer.sharedMaterial.HasProperty(EmissionColorId))
-                Block.SetColor(EmissionColorId, color * (0.65f * color.a));
-
             renderer.SetPropertyBlock(Block);
         }
 
@@ -213,61 +204,8 @@ namespace RagnarockEditor.Playback
 
         private static Material BuildMaterial()
         {
-            // Lit идёт первым: он точно есть в билде (его используют материалы сцены),
-            // поэтому Shader.Find не вернёт null даже после стриппинга шейдеров.
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null)
-                shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null)
-                shader = Shader.Find("Unlit/Color");
-            if (shader == null)
-                shader = Shader.Find("Standard");
-
-            var material = new Material(shader) { name = "RuneDisc_Runtime" };
-
-            if (material.HasProperty(BaseColorId))
-                material.SetColor(BaseColorId, Color.white);
-
-            if (material.HasProperty(ColorId))
-                material.SetColor(ColorId, Color.white);
-
-            // диск виден с обеих сторон
-            if (material.HasProperty(CullId))
-                material.SetFloat(CullId, 0f);
-
-            // прозрачность: плавное появление/исчезновение вместо изменения размера.
-            // Blend/ZWrite выставляем даже если свойства _Surface нет (fallback-шейдер).
-            if (material.HasProperty("_Surface"))
-                material.SetFloat("_Surface", 1f);
-
-            if (material.HasProperty("_Blend"))
-                material.SetFloat("_Blend", 0f);
-
-            if (material.HasProperty("_SrcBlend"))
-                material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-
-            if (material.HasProperty("_DstBlend"))
-                material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
-
-            if (material.HasProperty("_ZWrite"))
-                material.SetFloat("_ZWrite", 0f);
-
-            if (material.HasProperty("_AlphaClip"))
-                material.SetFloat("_AlphaClip", 0f);
-
-            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            material.DisableKeyword("_ALPHATEST_ON");
-            material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            material.SetOverrideTag("RenderType", "Transparent");
-            material.renderQueue = (int)RenderQueue.Transparent;
-
-            if (material.HasProperty(EmissionColorId))
-            {
-                material.EnableKeyword("_EMISSION");
-                material.SetColor(EmissionColorId, Color.white);
-            }
-
-            return material;
+            // Direct resource reference retains the transparent, stereo-capable pass in Quest builds.
+            return new Material(Resources.Load<Shader>("FjordRune")) { name = "RuneDisc_Runtime" };
         }
     }
 }

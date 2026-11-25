@@ -49,6 +49,7 @@ namespace RagnarockEditor.Playback
         private Quaternion _laneRotation;
         private float _spinAngle;
         private float _impactTimer;
+        private float _impactStartAlpha;
 
         /// <summary>Руна сейчас в полёте или на барабане.</summary>
         public bool IsActive => _isActive;
@@ -174,7 +175,8 @@ namespace RagnarockEditor.Playback
         /// </summary>
         public void PlayImpact()
         {
-            _impactTimer = _impactDuration;
+            _impactStartAlpha = _alpha;
+            _impactTimer = Mathf.Max(.05f, _impactDuration);
             _fadeInTimer = 0f;
         }
 
@@ -216,7 +218,7 @@ namespace RagnarockEditor.Playback
                 }
                 else
                 {
-                    _alpha = Mathf.Clamp01(_impactTimer / Mathf.Max(0.01f, _impactDuration));
+                    _alpha = _impactStartAlpha * Mathf.SmoothStep(0f, 1f, _impactTimer / Mathf.Max(.05f, _impactDuration));
                 }
 
                 ApplyAlpha();
@@ -267,8 +269,7 @@ namespace RagnarockEditor.Playback
                 Material material = _drumMaterials[WrapIndex(drumIndex, _drumMaterials.Length)];
                 if (material != null)
                 {
-                    _renderer.sharedMaterial = material;
-                    _renderer.SetPropertyBlock(null);
+                    SetColor(material.HasProperty("_BaseColor") ? material.GetColor("_BaseColor") : material.color);
                 }
 
                 return;

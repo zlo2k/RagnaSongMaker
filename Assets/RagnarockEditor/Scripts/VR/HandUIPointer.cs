@@ -42,6 +42,31 @@ namespace RagnarockEditor.VR
         private StoneControl _hoveredControl;
         private StoneControl _pressedControl;
         private Vector3 _pressedControlPoint;
+        private Plane _dragPlane;
+        private Slider _pressedSlider;
+        private bool _needsRelease;
+
+        private void ReleaseDrag()
+        {
+            if (_pressedControl) _pressedControl.EndDrag();
+            _pressedControl = null;
+            _pressedSlider = null;
+        }
+
+        private void OnDisable() { ReleaseDrag(); _needsRelease = true; }
+
+        private static void SetCanvasSlider(Slider slider, Vector3 point)
+        {
+            RectTransform rail = slider.handleRect ? slider.handleRect.parent as RectTransform :
+                slider.fillRect ? slider.fillRect.parent as RectTransform : slider.transform as RectTransform;
+            if (!rail) return;
+            var local = rail.InverseTransformPoint(point);
+            bool vertical = slider.direction == Slider.Direction.BottomToTop || slider.direction == Slider.Direction.TopToBottom;
+            float value = vertical ? Mathf.InverseLerp(rail.rect.yMin, rail.rect.yMax, local.y)
+                                   : Mathf.InverseLerp(rail.rect.xMin, rail.rect.xMax, local.x);
+            slider.normalizedValue = slider.direction == Slider.Direction.RightToLeft || slider.direction == Slider.Direction.TopToBottom
+                ? 1f-value : value;
+        }
 
         private void Awake()
         {
@@ -77,6 +102,8 @@ namespace RagnarockEditor.VR
             // контроллер не найден — не рисуем «висящий» луч и не ждём клика
             if (!_device.isValid)
             {
+                ReleaseDrag();
+                _needsRelease = true;
                 if (_line != null && _line.enabled)
                     _line.enabled = false;
                 return;
@@ -100,6 +127,24 @@ namespace RagnarockEditor.VR
 
             var end = origin + direction * _maxDistance;
 
+            bool pressed = IsTriggerPressed();
+            if (!pressed) { ReleaseDrag(); _needsRelease = false; }
+            var ray = new Ray(origin, direction);
+            if (pressed && (_pressedControl || _pressedSlider))
+            {
+                if ((_pressedControl && !_pressedControl.isActiveAndEnabled) ||
+                    (_pressedSlider && (!_pressedSlider.isActiveAndEnabled || !_pressedSlider.IsInteractable())))
+                    ReleaseDrag();
+                else if (_dragPlane.Raycast(ray, out float distance))
+                {
+                    end = ray.GetPoint(distance);
+                    if (_pressedControl) _pressedControl.PressAt(end);
+                    else SetCanvasSlider(_pressedSlider,end);
+                }
+                UpdateLine(origin,end,true);
+                return;
+            }
+            Slider sliderTarget = null;
             Button target = null;
             StoneButton stoneTarget = null;
             StoneControl controlTarget = null;
@@ -135,6 +180,14 @@ namespace RagnarockEditor.VR
                     break;
                 }
 
+                var slider = hits[i].collider.GetComponentInParent<Slider>();
+                if (slider && slider.IsInteractable())
+                {
+                    sliderTarget = slider;
+                    end = hits[i].point;
+                    break;
+                }
+
                 var button = hits[i].collider.GetComponentInParent<Button>();
                 if (button == null || !button.IsInteractable())
                     continue;
@@ -144,7 +197,7 @@ namespace RagnarockEditor.VR
                 break;
             }
 
-            UpdateLine(origin, end, stoneTarget != null || target != null || controlTarget != null);
+            UpdateLine(origin, end, stoneTarget != null || target != null || controlTarget != null || sliderTarget != null);
 
             if (_hoveredControl != controlTarget)
             {
@@ -183,14 +236,28 @@ namespace RagnarockEditor.VR
                     SfxPlayer.Instance.PlayHover();
             }
 
-            var pressed = IsTriggerPressed();
-            if (pressed && !_wasPressed)
+            if (pressed && !_wasPressed && !_needsRelease)
             {
                 if (controlTarget != null)
                 {
                     Debug.Log("[UI] control " + controlTarget.name);
                     SfxPlayer.Instance.PlayUi(SfxPlayer.UiSound.Select);
-                    controlTarget.PressAt(_pressedControlPoint);
+                    if (controlTarget.ControlKind == StoneControl.Kind.Slider)
+                    {
+                        if (controlTarget.BeginDrag())
+                        {
+                            _pressedControl = controlTarget;
+                            _dragPlane = new Plane(controlTarget.transform.forward, _pressedControlPoint);
+                            controlTarget.PressAt(_pressedControlPoint);
+                        }
+                    }
+                    else controlTarget.PressAt(_pressedControlPoint);
+                }
+                else if (sliderTarget)
+                {
+                    _pressedSlider = sliderTarget;
+                    _dragPlane = new Plane(sliderTarget.transform.forward, end);
+                    SetCanvasSlider(sliderTarget, end);
                 }
                 else if (stoneTarget != null)
                 {
