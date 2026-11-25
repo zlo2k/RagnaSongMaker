@@ -218,6 +218,9 @@ namespace RagnarockEditor.VR
             if (songs != null && songs.HandleBack())
                 return;
 
+            var maps = Object.FindFirstObjectByType<MyMapsScreen>();
+            if (maps != null && maps.Close()) return;
+
             var intro = Object.FindFirstObjectByType<IntroScreen>();
             if (intro != null && intro.HandleBack())
                 return;

@@ -1,4 +1,14 @@
 {
+  "transport.play": "Odtwórz",
+  "transport.pause": "Pauza",
+  "maps.title": "Moje mapy",
+  "maps.share": "Udostępnij",
+  "maps.previous": "Poprzednia",
+  "maps.next": "Następna",
+  "maps.empty": "Tutaj pojawią się wyeksportowane mapy",
+  "maps.packing": "Tworzenie ZIP…",
+  "maps.error": "Nie udało się udostępnić: {0}",
+
   "app.title": "RAGNAROCK EDITOR",
   "app.subtitle": "Edytor map rytmicznych do Ragnarock · Meta Quest",
 
