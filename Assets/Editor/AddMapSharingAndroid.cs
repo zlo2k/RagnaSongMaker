@@ -41,8 +41,15 @@ namespace RagnarockEditor.EditorTools
 
             string gradle = Path.Combine(path, "build.gradle");
             const string dependency = "androidx.core:core:1.13.1";
-            if (!File.ReadAllText(gradle).Contains(dependency))
+            string script = File.ReadAllText(gradle);
+            if (!script.Contains(dependency))
                 File.AppendAllText(gradle, "\ndependencies { implementation '" + dependency + "' }\n");
+
+            // Keep the legacy jdk7/jdk8 modules aligned with the stdlib used by AndroidX.
+            const string kotlinBom = "org.jetbrains.kotlin:kotlin-bom:1.8.22";
+            if (!script.Contains(kotlinBom))
+                File.AppendAllText(gradle, "\ndependencies { implementation platform('" + kotlinBom + "') }\n");
+
             string properties = Path.Combine(Directory.GetParent(path).FullName, "gradle.properties");
             if (!File.Exists(properties) || !File.ReadAllLines(properties).Any(l => l.Trim() == "android.useAndroidX=true"))
                 File.AppendAllText(properties, "\nandroid.useAndroidX=true\n");
