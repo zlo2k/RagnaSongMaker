@@ -1,4 +1,14 @@
 {
+  "transport.play": "Слушать",
+  "transport.pause": "Пауза",
+  "maps.title": "Мои карты",
+  "maps.share": "Поделиться",
+  "maps.previous": "Назад",
+  "maps.next": "Дальше",
+  "maps.empty": "Здесь появятся экспортированные карты",
+  "maps.packing": "Готовим ZIP…",
+  "maps.error": "Не удалось поделиться: {0}",
+
   "app.title": "RAGNAROCK EDITOR",
   "app.subtitle": "Редактор ритм-карт для Ragnarock · Meta Quest",
 

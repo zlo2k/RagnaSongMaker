@@ -31,6 +31,11 @@ namespace RagnarockEditor.VR
         private void Start()
         {
             Loc.Initialize();
+            if (_introRoot && _menuRoot)
+            {
+                var maps = _menuRoot.transform.parent.gameObject.AddComponent<MyMapsScreen>();
+                maps.Initialize(_menuRoot, _introRoot.transform);
+            }
 
             if (_startButton != null)
                 _startButton.onClick.AddListener(OnStartPressed);

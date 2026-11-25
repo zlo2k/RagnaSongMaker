@@ -30,10 +30,12 @@ namespace RagnarockEditor.Audio
         /// <param name="filePath">Полный путь к файлу</param>
         public void LoadAudio(string filePath)
         {
-            StartCoroutine(LoadAudioCoroutine(filePath));
+            StartCoroutine(LoadAudioCoroutine(filePath, ++_requestVersion));
         }
 
-        private IEnumerator LoadAudioCoroutine(string filePath)
+        private int _requestVersion;
+
+        private IEnumerator LoadAudioCoroutine(string filePath, int version)
         {
             Progress = 0f;
 
@@ -69,10 +71,12 @@ namespace RagnarockEditor.Audio
 
                 while (!www.isDone)
                 {
+                    if (version != _requestVersion) yield break;
                     Progress = www.downloadProgress;
                     yield return null;
                 }
 
+                if (version != _requestVersion) yield break;
                 if (www.result == UnityWebRequest.Result.Success)
                 {
                     LoadedClip = DownloadHandlerAudioClip.GetContent(www);
@@ -116,6 +120,7 @@ namespace RagnarockEditor.Audio
         /// </summary>
         public void Unload()
         {
+            _requestVersion++;
             if (LoadedClip != null)
             {
                 Destroy(LoadedClip);

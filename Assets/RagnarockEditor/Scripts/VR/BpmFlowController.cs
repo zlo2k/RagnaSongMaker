@@ -45,6 +45,7 @@ namespace RagnarockEditor.VR
         private const float MaxBpm = 300f;
         private const float DefaultBpm = 120f;
 
+        private BpmSongTransport _transport;
         private Task<BPMDetector.BPMResult> _analysisTask;
         private string _pendingPath;
         private string _pendingName;
@@ -140,6 +141,12 @@ namespace RagnarockEditor.VR
             // Сразу переключаем экран на BPM: нажатие по треку должно давать видимую реакцию,
             // даже если загрузка и анализ займут несколько секунд.
             ShowBpmStage();
+            if (_bpmEditorRoot)
+            {
+                if (!_transport) _transport = _bpmEditorRoot.GetComponent<BpmSongTransport>();
+                if (!_transport) _transport = _bpmEditorRoot.AddComponent<BpmSongTransport>();
+                _transport.SetClip(null);
+            }
             SetContinueInteractable(false);
             ResolveBpmEditor()?.ResetForAnalysis();
 
@@ -180,6 +187,7 @@ namespace RagnarockEditor.VR
             }
 
             _navigating = true;
+            if (_transport) _transport.SetClip(null);
 
             UnsubscribeLoader();
             if (_bpmEditor != null)
@@ -208,6 +216,7 @@ namespace RagnarockEditor.VR
                 return;
             }
 
+            if (_transport) _transport.SetClip(clip);
             _clipLength = clip.length;
             SetStatus(Loc.T(LocKeys.SongsAnalyzing, _pendingName));
 
