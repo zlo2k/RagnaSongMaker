@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace RagnarockEditor.VR
@@ -6,45 +6,44 @@ namespace RagnarockEditor.VR
     /// <summary>
     /// Детект удара молота по барабану.
     ///
-    /// Барабаны стоят вертикально, поэтому удар считается не по «высоте», а по
-    /// пересечению плоскости головки по её нормали: головка смотрит на игрока,
-    /// молот идёт со стороны игрока в сторону барабана. Удар засчитывается ровно
-    /// один раз за проход через плоскость удара (на <see cref="_hitPlane"/> перед
-    /// головкой). Геометрия молота (одна/две грани, толщина) роли не играет —
-    /// используется одна точка HeadPosition.
+    /// Работает не по «объёму», а по пересечению горизонтальной плоскости над барабаном:
+    /// удар засчитывается ровно один раз за проход головки сверху вниз через плоскость
+    /// (y = центр головки + _hitPlane). Геометрия молота (одна/две грани, толщина)
+    /// роли не играет — используется одна точка HeadPosition.
     ///
-    /// После удара молот нужно ОТВЕСТИ от барабана на <see cref="_rearmHeight"/>,
-    /// иначе следующие проходы игнорируются. Это исключает двойные срабатывания
-    /// от отскока и «второй грани».
+    /// После удара молот нужно ПОДНЯТЬ выше _rearmHeight, иначе следующие проходы
+    /// игнорируются. Это исключает двойные срабатывания от отскока, проскальзывания
+    /// сквозь барабан и «второй грани».
     ///
     /// Дополнительно:
-    ///  - удар только «в барабан» (скорость вдоль нормали к плоскости);
+    ///  - удар только сверху (вертикальная скорость вниз);
     ///  - регистрирует только ближайший к головке барабан (сосед не задевается);
-    ///  - кулдаун на барабан, сбрасывается при отводе молота.
+    ///  - кулдаун на барабан;
+    ///  - кулдаун и перезарядка сбрасываются при подъёме.
     /// </summary>
     public class DrumHitDetector : MonoBehaviour
     {
         [SerializeField] private DrumController _drumController;
 
         [Header("Плоскость удара")]
-        [Tooltip("Расстояние от центра головки до плоскости удара в сторону игрока, метры.")]
-        [SerializeField] private float _hitPlane = 0.025f;
+        [Tooltip("Высота плоскости удара над центром головки барабана, метры.")]
+        [SerializeField] private float _hitPlane = 0.03f;
 
         [Tooltip("Радиус пятна удара, метры. Меньше половины шага между барабанами (0.178 м).")]
         [SerializeField] private float _hitRadius = 0.16f;
 
-        [Tooltip("Насколько молот должен уйти за головку, чтобы это считалось промахом, метры.")]
+        [Tooltip("Ниже этой высоты относительно детектора удар не считается (молот уже прошёл сквозь).")]
         [SerializeField] private float _bottomTolerance = 0.12f;
 
-        [Tooltip("На сколько нужно отвести молот от барабана, чтобы он снова мог ударить, метры.")]
+        [Tooltip("На сколько нужно поднять молот над плоскостью, чтобы он снова мог ударить, метры.")]
         [SerializeField] private float _rearmHeight = 0.09f;
 
         [Header("Скорости")]
         [Tooltip("Минимальная общая скорость головки молота, м/с.")]
         [SerializeField] private float _minSpeed = 0.6f;
 
-        [Tooltip("Минимальная скорость движения к барабану (вдоль нормали), м/с.")]
-        [SerializeField] private float _minApproachSpeed = 0.25f;
+        [Tooltip("Минимальная скорость движения ВНИЗ, м/с — удар должен идти сверху.")]
+        [SerializeField] private float _minDownSpeed = 0.35f;
 
         [Header("Антидребезг")]
         [Tooltip("Кулдаун между ударами по этому барабану, секунды.")]
@@ -52,7 +51,7 @@ namespace RagnarockEditor.VR
 
         private readonly List<HammerController> _hammers = new List<HammerController>();
         private readonly HashSet<HammerController> _disarmed = new HashSet<HammerController>();
-        private readonly Dictionary<HammerController, float> _previousAlong =
+        private readonly Dictionary<HammerController, float> _previousY =
             new Dictionary<HammerController, float>();
 
         private DrumManager _drumManager;
@@ -95,9 +94,6 @@ namespace RagnarockEditor.VR
             }
 
             Vector3 center = transform.position;
-
-            // Нормаль плоскости головки (у вертикального барабана смотрит на игрока)
-            Vector3 normal = transform.up;
             float radiusSqr = _hitRadius * _hitRadius;
 
             for (int i = 0; i < _hammers.Count; i++)
@@ -108,47 +104,42 @@ namespace RagnarockEditor.VR
 
                 Vector3 headPosition = hammer.HeadPosition;
                 Vector3 delta = headPosition - center;
+                float horizontalSqr = delta.x * delta.x + delta.z * delta.z;
+                float currentY = delta.y;
 
-                // Расстояние вдоль нормали: > 0 — молот перед барабаном (со стороны игрока)
-                float along = Vector3.Dot(delta, normal);
-                float inPlaneSqr = (delta - normal * along).sqrMagnitude;
+                float previousY;
 
-                float previous;
-
-                if (!_previousAlong.TryGetValue(hammer, out previous))
+                if (!_previousY.TryGetValue(hammer, out previousY))
                 {
-                    // Первый кадр для этого молота: запоминаем положение, но не считаем удар,
+                    // Первый кадр для этого молота: запоминаем высоту, но не считаем удар,
                     // чтобы «телепорт» внутрь зоны не дал ложного срабатывания.
-                    _previousAlong[hammer] = along;
+                    _previousY[hammer] = currentY;
                     continue;
                 }
 
-                _previousAlong[hammer] = along;
+                _previousY[hammer] = currentY;
 
-                // Молот отведён от барабана — снова «заряжен» и кулдаун больше не мешает
-                if (along > _hitPlane + _rearmHeight)
+                // Подняли молот — снова «заряжен» и кулдаун больше не мешает
+                if (currentY > _rearmHeight)
                     _disarmed.Remove(hammer);
 
                 if (_disarmed.Contains(hammer))
                     continue;
 
-                // Нужен именно проход в сторону барабана через плоскость удара
-                if (previous <= _hitPlane || along > _hitPlane)
+                // Нужен именно проход сверху вниз через плоскость
+                if (currentY > _hitPlane || previousY <= _hitPlane)
                     continue;
 
-                // Молот уже провалился за головку — это не удар
-                if (along < -_bottomTolerance)
+                // Молот уже провалился ниже барабана — это не удар
+                if (currentY < -_bottomTolerance)
                     continue;
 
-                if (inPlaneSqr > radiusSqr)
+                if (horizontalSqr > radiusSqr)
                     continue;
 
                 Vector3 velocity = hammer.Velocity;
 
-                // Скорость «в барабан»: проекция на -normal (к плоскости головки)
-                float approach = Vector3.Dot(velocity, -normal);
-
-                if (approach < _minApproachSpeed)
+                if (velocity.y > -_minDownSpeed)
                     continue;
 
                 if (velocity.magnitude < _minSpeed)
@@ -174,12 +165,12 @@ namespace RagnarockEditor.VR
                 _drumController.RegisterHit(velocity.magnitude);
                 HapticFeedback.TriggerHaptic(hammer.IsRightHand, velocity.magnitude);
 
-                Debug.Log($"[Hit] drum={_drumController.DrumIndex}, approach={approach:F2}, " +
+                Debug.Log($"[Hit] drum={_drumController.DrumIndex}, vy={velocity.y:F2}, " +
                           $"speed={velocity.magnitude:F2}, hammer={hammer.name}");
             }
         }
 
-        /// <summary>Барабан ближе всех к головке молота.</summary>
+        /// <summary>Барабан ближе всех к головке молота по горизонтали.</summary>
         private bool IsClosestDrum(Vector3 headPosition)
         {
             if (_drumManager == null)
@@ -197,9 +188,10 @@ namespace RagnarockEditor.VR
                 if (drum == null)
                     continue;
 
-                // Расстояние до центра головки барабана (у всех барабанов он вынесен
-                // одинаково, поэтому порядок тот же, что и по корпусу)
-                float sqr = (drum.FaceCenter - headPosition).sqrMagnitude;
+                Vector3 position = drum.transform.position;
+                float dx = position.x - headPosition.x;
+                float dz = position.z - headPosition.z;
+                float sqr = dx * dx + dz * dz;
 
                 if (sqr < bestSqr)
                 {
@@ -213,19 +205,19 @@ namespace RagnarockEditor.VR
 
         private void PrunePreviousPositions()
         {
-            if (_previousAlong.Count == 0)
+            if (_previousY.Count == 0)
                 return;
 
             var stale = new List<HammerController>();
 
-            foreach (var pair in _previousAlong)
+            foreach (var pair in _previousY)
             {
                 if (pair.Key == null)
                     stale.Add(pair.Key);
             }
 
             for (int i = 0; i < stale.Count; i++)
-                _previousAlong.Remove(stale[i]);
+                _previousY.Remove(stale[i]);
         }
     }
 }

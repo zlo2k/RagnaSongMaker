@@ -1,12 +1,11 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace RagnarockEditor.Playback
 {
     /// <summary>
-    /// Эффект удара по барабану: кружок появляется в плоскости головки и улетает
-    /// от игрока вглубь сцены, повёрнутый «лицом» к игроку (плоскость диска
-    /// перпендикулярна полёту), постепенно уменьшаясь.
+    /// Эффект удара по барабану: кружок появляется на барабане и улетает от игрока
+    /// в горизонтальной плоскости (на высоте барабанов), постепенно уменьшаясь.
     ///
     /// Пул статический: при быстрой дроби объекты не создаются/не удаляются каждый удар.
     /// </summary>
@@ -49,9 +48,7 @@ namespace RagnarockEditor.Playback
             DiscVisual.ApplyColor(effect._renderer, effect._color, 0f);
 
             effect.transform.position = position;
-
-            // Диск стоит поперёк полёта: игрок видит его «лицом», как руну
-            effect.transform.rotation = Quaternion.FromToRotation(Vector3.up, direction);
+            effect.transform.rotation = Quaternion.identity;
             effect.transform.localScale = effect._baseScale * effect._scale;
             effect.gameObject.SetActive(true);
         }
@@ -89,10 +86,7 @@ namespace RagnarockEditor.Playback
             transform.position += _direction * (Speed * (1f - 0.35f * t) * dt);
 
             _spin += SpinSpeed * dt;
-
-            // Вращение вокруг оси диска (она же направление полёта)
-            transform.rotation = Quaternion.FromToRotation(Vector3.up, _direction) *
-                                 Quaternion.Euler(0f, _spin, 0f);
+            transform.rotation = Quaternion.Euler(0f, _spin, 0f);
 
             // Размер постоянный. Появление на границе и исчезновение — только прозрачностью.
             transform.localScale = _baseScale * _scale;

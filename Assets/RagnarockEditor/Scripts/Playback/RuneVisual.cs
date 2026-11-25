@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace RagnarockEditor.Playback
@@ -38,7 +38,6 @@ namespace RagnarockEditor.Playback
 
         private Vector3 _startPosition;
         private Vector3 _targetPosition;
-        private Vector3 _flightAxis = Vector3.forward;
         private Vector3 _baseScale = Vector3.one;
         private Color _currentColor = Color.white;
         private float _alpha = 1f;
@@ -126,10 +125,6 @@ namespace RagnarockEditor.Playback
             _startPosition = startPosition;
             _targetPosition = targetPosition;
 
-            // Ось полёта: диск должен стоять поперёк неё, «лицом» к игроку
-            Vector3 direction = targetPosition - startPosition;
-            _flightAxis = direction.sqrMagnitude > 1e-6f ? direction.normalized : Vector3.forward;
-
             _drumIndex = drumIndex;
             _noteIndex = noteIndex;
             _spinAngle = 0f;
@@ -141,7 +136,7 @@ namespace RagnarockEditor.Playback
             _fadeInTimer = Mathf.Max(0.01f, _fadeInDuration);
 
             transform.position = startPosition;
-            transform.rotation = Quaternion.FromToRotation(Vector3.up, _flightAxis);
+            transform.rotation = Quaternion.identity;
             transform.localScale = BaseScale;
 
             ApplyDrumColor(drumIndex >= 0 ? drumIndex : noteIndex);
@@ -192,10 +187,7 @@ namespace RagnarockEditor.Playback
                 _spinAngle += _spinSpeed * dt;
                 if (_spinAngle > 360f)
                     _spinAngle -= 360f;
-
-                // Вращение вокруг оси полёта: диск остаётся «лицом» к игроку
-                transform.rotation = Quaternion.FromToRotation(Vector3.up, _flightAxis) *
-                                     Quaternion.Euler(0f, _spinAngle, 0f);
+                transform.rotation = Quaternion.Euler(0f, _spinAngle, 0f);
             }
 
             // плавное появление на границе

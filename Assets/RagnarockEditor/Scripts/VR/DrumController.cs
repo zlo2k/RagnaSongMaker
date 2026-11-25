@@ -21,10 +21,6 @@ namespace RagnarockEditor.VR
         [SerializeField] private Material _hitMaterial;
         [SerializeField] private float _hitFlashDuration = 0.1f;
 
-        [Header("Головка")]
-        [Tooltip("Дочерний объект Head — плоскость барабана. Если пусто, ищется по имени.")]
-        [SerializeField] private Transform _headTransform;
-
         [Header("Звук")]
         [SerializeField] private AudioSource _audioSource;
         [SerializeField] private AudioClip _hitSound;
@@ -38,39 +34,6 @@ namespace RagnarockEditor.VR
 
         /// <summary>Индекс барабана (0-3).</summary>
         public int DrumIndex => _drumIndex;
-
-        /// <summary>Объект головки (плоскость удара).</summary>
-        public Transform HeadTransform
-        {
-            get
-            {
-                if (_headTransform == null)
-                    _headTransform = transform.Find("Head");
-
-                return _headTransform;
-            }
-        }
-
-        /// <summary>Центр плоскости головки в мире.</summary>
-        public Vector3 FaceCenter
-        {
-            get
-            {
-                var head = HeadTransform;
-                return head != null ? head.position : transform.position;
-            }
-        }
-
-        /// <summary>Нормаль плоскости головки в мире — смотрит на игрока.</summary>
-        public Vector3 FaceNormal
-        {
-            get
-            {
-                var head = HeadTransform;
-                return head != null ? head.up : transform.up;
-            }
-        }
-
         /// <summary>
         /// Задаёт индекс барабана. Вызывается DrumManager при создании/расстановке:
         /// в префабе Drum.prefab индекс всегда 0, и без этого все удары
@@ -98,50 +61,6 @@ namespace RagnarockEditor.VR
                 _audioSource = GetComponent<AudioSource>();
 
             _propBlock = new MaterialPropertyBlock();
-
-            EnsureRim();
-        }
-
-        /// <summary>
-        /// Обод барабана: без него плоская головка читается как шляпка молотка.
-        /// Кольцо из того же материала, что и корпус, чуть больше головки и выступает вперёд.
-        /// </summary>
-        private void EnsureRim()
-        {
-            if (transform.Find("Rim") != null)
-                return;
-
-            var body = transform.Find("Body");
-            var bodyRenderer = body != null ? body.GetComponent<MeshRenderer>() : null;
-            var material = bodyRenderer != null ? bodyRenderer.sharedMaterial : _defaultMaterial;
-
-            var rim = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            rim.name = "Rim";
-
-            var collider = rim.GetComponent<Collider>();
-            if (collider != null)
-                Destroy(collider);
-
-            rim.transform.SetParent(transform, false);
-            rim.transform.localPosition = new Vector3(0f, 0.085f, 0f);
-            rim.transform.localRotation = Quaternion.identity;
-            rim.transform.localScale = new Vector3(0.40f, 0.018f, 0.40f);
-
-            var renderer = rim.GetComponent<MeshRenderer>();
-            if (renderer != null)
-            {
-                renderer.sharedMaterial = material;
-                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            }
-        }
-
-        /// <summary>
-        /// Масштаб барабана под диаметр из DrumLayoutConfig (префаб собран под 0.35 м).
-        /// </summary>
-        public void SetVisualScale(float scale)
-        {
-            float value = Mathf.Clamp(scale, 0.4f, 2.5f);
-            transform.localScale = Vector3.one * value;
         }
 
         private void Update()
@@ -180,8 +99,8 @@ namespace RagnarockEditor.VR
             // Звуковая обратная связь
             PlayHitSound(hammerVelocity);
 
-            // Как в игре: от плоскости головки улетает кружок в плоскости барабана, прочь от игрока
-            HitDiscEffect.Spawn(FaceCenter + FaceNormal * 0.03f, _drumIndex, hammerVelocity);
+            // Как в игре: от барабана улетает кружок в плоскости его верха, прочь от игрока
+            HitDiscEffect.Spawn(transform.position + Vector3.up * 0.1f, _drumIndex, hammerVelocity);
 
             // Событие
             OnDrumHit?.Invoke(_drumIndex, hammerVelocity);

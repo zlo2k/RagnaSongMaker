@@ -13,30 +13,30 @@ namespace RagnarockEditor.Data
         [Header("Позиция относительно игрока")]
         [Tooltip("Расстояние от игрока до линии барабанов (вперёд), метры")]
         [Range(0.3f, 1.5f)]
-        public float DistanceFromPlayer = 0.60f;
+        public float DistanceFromPlayer = 0.8f;
 
-        [Tooltip("Высота центра барабанов относительно пола, метры (грудь, а не пол — барабаны вертикальные)")]
+        [Tooltip("Высота центра барабанов относительно пола, метры")]
         [Range(0.5f, 1.3f)]
-        public float DrumHeight = 0.85f;
+        public float DrumHeight = 0.9f;
 
         [Tooltip("Общая ширина расстановки 4-х барабанов, метры")]
         [Range(0.8f, 2.5f)]
-        public float TotalWidth = 1.28f;
+        public float TotalWidth = 1.6f;
 
         [Header("Радиус полукруга")]
         [Tooltip("0 = ровная линия; >0 = изгиб полукругом к игроку")]
         [Range(0f, 1f)]
-        public float ArcRadius = 0.12f;
+        public float ArcRadius = 0.3f;
 
         [Header("Наклон барабана")]
-        [Tooltip("Наклон плоскости головки вверх, градусы (0 = строго вертикально, лицом к игроку)")]
+        [Tooltip("Угол наклона поверхности к игроку, градусы (0 = строго вверх)")]
         [Range(0f, 30f)]
-        public float DrumTiltAngle = 0f;
+        public float DrumTiltAngle = 10f;
 
         [Header("Размеры барабана")]
         [Tooltip("Диаметр бочки барабана, метры")]
         [Range(0.2f, 0.6f)]
-        public float DrumDiameter = 0.42f;
+        public float DrumDiameter = 0.35f;
 
         [Tooltip("Высота корпуса барабана, метры")]
         [Range(0.05f, 0.3f)]

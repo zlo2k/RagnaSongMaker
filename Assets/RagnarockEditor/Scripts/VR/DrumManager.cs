@@ -103,20 +103,6 @@ namespace RagnarockEditor.VR
         }
 
         /// <summary>
-        /// Приводит размер всех барабанов к диаметру из конфига (префаб собран под 0.35 м).
-        /// </summary>
-        public void SetDrumDiameter(float diameter)
-        {
-            float scale = Mathf.Max(0.2f, diameter) / 0.35f;
-
-            for (int i = 0; i < Drums.Length; i++)
-            {
-                if (Drums[i] != null)
-                    Drums[i].SetVisualScale(scale);
-            }
-        }
-
-        /// <summary>
         /// Включает/выключает коллизии на всех барабанах (для паузы).
         /// </summary>
         public void SetDrumsActive(bool active)

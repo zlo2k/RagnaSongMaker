@@ -32,8 +32,8 @@ namespace RagnarockEditor.Playback
         [Tooltip("Дистанция, с которой руна вылетает в сторону игрока (по направлению от игрока), метры.")]
         [SerializeField] private float _approachDistance = 2.2f;
 
-        [Tooltip("Зазор между плоскостью руны и головкой барабана, метры — руны летят в плоскости барабанов.")]
-        [SerializeField] private float _faceGap = 0.03f;
+        [Tooltip("Высота руны над точкой барабана, метры — руны летят в плоскости над барабанами.")]
+        [SerializeField] private float _hoverHeight = 0.1f;
 
         [Tooltip("Длительность подсветки барабана при попадании, секунды.")]
         [SerializeField] private float _drumHighlightDuration = 0.2f;
@@ -175,12 +175,12 @@ namespace RagnarockEditor.Playback
             float noteTime = note.GetTimeInSeconds(_bpm);
             float jumpTime = Mathf.Max(0.05f, _spawnAdvanceTime);
 
-            // Как в игре: руна летит по палубе в плоскости барабанов — из глубины сцены
-            // к плоскости головки, а не падает сверху.
-            Vector3 normal = GetDrumFaceNormal(drumIndex);
-            Vector3 target = GetDrumFaceCenter(drumIndex) + normal * _faceGap;
+            // Как в игре: руна летит по палубе в плоскости над барабанами —
+            // от дальней точки в сторону игрока, а не падает сверху.
+            Vector3 target = GetDrumPosition(drumIndex) + Vector3.up * _hoverHeight;
             Vector3 awayFromPlayer = GetAwayDirection(target);
             Vector3 start = target + awayFromPlayer * Mathf.Max(0.5f, _approachDistance);
+            start.y = target.y;
 
             ActiveRune entry = GetEntry();
             entry.Visual = visual;
@@ -297,45 +297,6 @@ namespace RagnarockEditor.Playback
             }
 
             return GetFallbackDrumPosition(index);
-        }
-
-        /// <summary>Центр плоскости головки барабана: цель полёта руны.</summary>
-        public Vector3 GetDrumFaceCenter(int drumIndex)
-        {
-            int index = Mathf.Clamp(drumIndex, 0, 3);
-
-            var drum = GetDrum(index);
-            if (drum != null)
-                return drum.FaceCenter;
-
-            return GetDrumPosition(index) + GetDrumFaceNormal(index) * VR.DrumPositioner.FaceOffset;
-        }
-
-        /// <summary>Нормаль плоскости головки (смотрит на игрока).</summary>
-        public Vector3 GetDrumFaceNormal(int drumIndex)
-        {
-            int index = Mathf.Clamp(drumIndex, 0, 3);
-
-            var drum = GetDrum(index);
-            if (drum != null)
-                return drum.FaceNormal;
-
-            if (_drumPositioner != null && _drumPositioner.isActiveAndEnabled)
-                return _drumPositioner.FaceNormal;
-
-            // Вертикальные барабаны смотрят на игрока: нормаль — против «вперёд по палубе»
-            return -DeckOrientation.Forward;
-        }
-
-        private VR.DrumController GetDrum(int drumIndex)
-        {
-            if (_drumManager == null || _drumManager.Drums == null)
-                return null;
-
-            if (drumIndex < 0 || drumIndex >= _drumManager.Drums.Length)
-                return null;
-
-            return _drumManager.Drums[drumIndex];
         }
 
         // ---------------------------------------------------------- Внутреннее

@@ -29,11 +29,11 @@ namespace RagnarockEditor.Core
 
         [Header("Барабаны (по умолчанию)")]
         [Range(0.3f, 1.5f)]
-        public float DefaultDrumDistance = 0.60f;
+        public float DefaultDrumDistance = 0.8f;
         [Range(0.5f, 1.3f)]
-        public float DefaultDrumHeight = 0.85f;
+        public float DefaultDrumHeight = 0.9f;
         [Range(0.8f, 2.5f)]
-        public float DefaultDrumWidth = 1.28f;
+        public float DefaultDrumWidth = 1.6f;
 
         [Header("Язык")]
         public SystemLanguage Language = SystemLanguage.Russian;

@@ -42,13 +42,7 @@ namespace RagnarockEditor.VR
 
             positioner.Calculate();
             manager.PositionDrums(positioner.DrumPositions, positioner.DrumRotation);
-
-            // Крупные барабаны как в игре: размер задаётся конфигом, префаб — 0.35 м
-            var config = positioner.Config;
-            var diameter = config != null ? config.DrumDiameter : 0.35f;
-            manager.SetDrumDiameter(diameter);
-
-            AttachDetectors(manager, diameter, config);
+            AttachDetectors(manager);
             Debug.Log("[Drums] барабаны созданы и расставлены");
         }
 
@@ -71,15 +65,10 @@ namespace RagnarockEditor.VR
         /// Вешает DrumHitDetector на «Head» каждого барабана — в префабе его нет,
         /// поэтому удары раньше не регистрировались вообще.
         /// </summary>
-        private static void AttachDetectors(DrumManager manager, float diameter, RagnarockEditor.Data.DrumLayoutConfig config)
+        private static void AttachDetectors(DrumManager manager)
         {
             if (manager == null || manager.Drums == null)
                 return;
-
-            // Радиус пятна удара: чуть меньше половины шага между барабанами,
-            // чтобы один замах не засчитывался соседу.
-            float spacing = config != null ? config.TotalWidth / 3f : 0.357f;
-            float radius = Mathf.Min(Mathf.Max(0.06f, diameter * 0.44f), spacing * 0.45f);
 
             for (int i = 0; i < manager.Drums.Length; i++)
             {
@@ -96,7 +85,10 @@ namespace RagnarockEditor.VR
                     Object.Destroy(detectors[d]);
 
                 var detector = detectors.Length > 0 ? detectors[0] : target.AddComponent<DrumHitDetector>();
-                detector.Configure(drum, radius);
+
+                // Радиус 0.16 < половины шага (0.178): зоны соседних барабанов не перекрываются,
+                // а удар засчитывается только при заходе головки сверху в цилиндр.
+                detector.Configure(drum, 0.16f);
             }
 
             Debug.Log("[Drums] зоны удара подключены");

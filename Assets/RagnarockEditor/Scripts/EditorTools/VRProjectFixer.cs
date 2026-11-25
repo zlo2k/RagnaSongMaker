@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using RagnarockEditor.Audio;
@@ -2698,13 +2698,13 @@ namespace RagnarockEditor.EditorTools
             PlacePanel("HUDCanvas", new Vector3(0f, 1.75f, 1.20f), 0.0011f, rig.transform);
             PlacePanel("Fjord Scroll List", new Vector3(0f, 1.45f, 1.20f), 0.0011f, rig.transform);
             PlacePanel("SongSelectionCanvas", new Vector3(0f, 1.45f, 1.20f), 0.0011f, rig.transform);
-            PlacePanel("BpmCanvas", new Vector3(0f, 1.66f, 1.20f), 0.0011f, rig.transform);
+            PlacePanel("BpmCanvas", new Vector3(0f, 1.45f, 1.20f), 0.0011f, rig.transform);
             PlacePanel("CalibrationCanvas", new Vector3(0f, 1.50f, 1.10f), 0.0011f, rig.transform);
             PlacePanel("IntroCanvas", new Vector3(0f, 1.50f, 1.20f), 0.0011f, rig.transform);
             PlacePanel("ExitCanvas", new Vector3(0f, 1.45f, 1.06f), 0.0011f, rig.transform);
-            PlaceBoard("BpmStoneControls", new Vector3(0f, 1.20f, 1.19f), 180f, rig.transform);
-            PlaceBoard("RecordStoneControls", new Vector3(0f, 1.20f, 1.19f), 180f, rig.transform);
-            PlaceBoard("PreviewStoneControls", new Vector3(0f, 1.20f, 1.19f), 180f, rig.transform);
+            PlaceBoard("BpmStoneControls", new Vector3(0f, 1.0f, 1.19f), 180f, rig.transform);
+            PlaceBoard("RecordStoneControls", new Vector3(0f, 1.0f, 1.19f), 180f, rig.transform);
+            PlaceBoard("PreviewStoneControls", new Vector3(0f, 1.0f, 1.19f), 180f, rig.transform);
 
             PlaceAtRig("StoneUI", rig.transform);
             PlaceAtRig("SongSelectionFlow", rig.transform);

@@ -32,19 +32,19 @@ namespace RagnarockEditor.Data
         public float PlayerHeight = 1.75f;
 
         /// <summary>Расстояние от игрока до линии барабанов (м).</summary>
-        public float DistanceToDrums = 0.60f;
+        public float DistanceToDrums = 0.8f;
 
         /// <summary>Высота центра барабанов от пола (м).</summary>
-        public float DrumHeight = 0.85f;
+        public float DrumHeight = 0.9f;
 
         /// <summary>Общая ширина расстановки 4-х барабанов (м).</summary>
-        public float TotalWidth = 1.28f;
+        public float TotalWidth = 1.6f;
 
         /// <summary>Радиус дуги (0 = ровная линия).</summary>
-        public float ArcRadius = 0.12f;
+        public float ArcRadius = 0.3f;
 
         /// <summary>Угол наклона поверхности барабана к игроку (градусы).</summary>
-        public float DrumTiltAngle = 0f;
+        public float DrumTiltAngle = 10f;
 
         /// <summary>Имя профиля.</summary>
         public string ProfileName = "Default";
@@ -60,11 +60,11 @@ namespace RagnarockEditor.Data
             return new DrumCalibrationProfile
             {
                 PlayerHeight = 1.75f,
-                DistanceToDrums = 0.60f,
-                DrumHeight = 0.85f,
-                TotalWidth = 1.28f,
-                ArcRadius = 0.12f,
-                DrumTiltAngle = 0f,
+                DistanceToDrums = 0.8f,
+                DrumHeight = 0.9f,
+                TotalWidth = 1.6f,
+                ArcRadius = 0.3f,
+                DrumTiltAngle = 10f,
                 ProfileName = "Default",
                 LastCalibrated = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             };

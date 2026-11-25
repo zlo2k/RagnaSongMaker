@@ -5,28 +5,17 @@ namespace RagnarockEditor.VR
 {
     /// <summary>
     /// Рассчитывает мировые позиции 4-х барабанов на основе DrumLayoutConfig.
-    /// Барабаны стоят вертикально: плоскость головки смотрит на игрока,
-    /// DrumTiltAngle наклоняет её вверх (0 — строго вертикально).
     /// </summary>
     public class DrumPositioner : MonoBehaviour
     {
         [SerializeField] private DrumLayoutConfig _config;
         [SerializeField] private Transform _xrOrigin;
 
-        /// <summary>Смещение головки вперёд от центра корпуса, метры (как в Drum.prefab).</summary>
-        public const float FaceOffset = 0.08f;
-
         /// <summary>Вычисленные позиции (обновляются при вызове Calculate).</summary>
         public Vector3[] DrumPositions { get; private set; } = new Vector3[4];
 
         /// <summary>Поворот для всех барабанов.</summary>
-        public Quaternion DrumRotation { get; private set; } = Quaternion.Euler(-90f, 0f, 0f);
-
-        /// <summary>Нормаль плоскости головки в мире — смотрит на игрока.</summary>
-        public Vector3 FaceNormal => DrumRotation * Vector3.up;
-
-        /// <summary>Центр плоскости головки для позиции корпуса <paramref name="drumPosition"/>.</summary>
-        public Vector3 FaceCenter(Vector3 drumPosition) => drumPosition + FaceNormal * FaceOffset;
+        public Quaternion DrumRotation { get; private set; }
 
         /// <summary>
         /// Конфиг расстановки. Позволяет калибровке подставить тот же DrumLayoutConfig,
@@ -119,13 +108,12 @@ namespace RagnarockEditor.VR
                 DrumPositions[i] = pos;
             }
 
-            // Вертикальная стойка: головка смотрит на игрока, DrumTiltAngle наклоняет её вверх.
-            // Было Quaternion.Euler(tilt, 0, 0) — головка смотрела вверх, барабаны лежали.
-            DrumRotation = Quaternion.Euler(-(90f - _config.DrumTiltAngle), 0f, 0f);
+            // Поворот: наклон к игроку
+            DrumRotation = Quaternion.Euler(_config.DrumTiltAngle, 0f, 0f);
         }
 
         /// <summary>
-        /// Рисует гизмы барабанов в редакторе: кольцо головки и нормаль к плоскости.
+        /// Рисует гизмы барабанов в редакторе.
         /// </summary>
         private void OnDrawGizmosSelected()
         {
@@ -134,14 +122,10 @@ namespace RagnarockEditor.VR
             Calculate();
 
             Gizmos.color = Color.yellow;
-
             for (int i = 0; i < 4; i++)
             {
-                Vector3 face = FaceCenter(DrumPositions[i]);
-                float radius = _config.DrumDiameter * 0.5f;
-
-                Gizmos.DrawWireSphere(face, radius);
-                Gizmos.DrawRay(face, FaceNormal * 0.3f);
+                Gizmos.DrawWireSphere(DrumPositions[i], _config.DrumDiameter * 0.5f);
+                Gizmos.DrawRay(DrumPositions[i], Quaternion.Euler(_config.DrumTiltAngle, 0f, 0f) * Vector3.up * 0.3f);
             }
         }
     }
