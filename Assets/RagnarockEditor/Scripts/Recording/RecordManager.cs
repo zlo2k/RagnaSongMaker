@@ -185,8 +185,6 @@ namespace RagnarockEditor.Recording
 
             // Чистим результаты прошлого дубля.
             _session.ClearHits();
-            if (_noteCollector != null)
-                _noteCollector.ResetDebounce();
 
             _fallbackElapsed = 0f;
             _recordedLength = 0f;

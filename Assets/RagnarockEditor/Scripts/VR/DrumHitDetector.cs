@@ -7,6 +7,7 @@ namespace RagnarockEditor.VR
     /// Регистрирует проход бойка через мембрану сверху вниз. Радиус зоны удара
     /// проверяется в точке пересечения двух последовательных позиций бойка.
     /// </summary>
+    [DefaultExecutionOrder(200)] // after AimAlignedObject.LateUpdate
     public class DrumHitDetector : MonoBehaviour
     {
         [SerializeField] private DrumController _drumController;
@@ -16,7 +17,7 @@ namespace RagnarockEditor.VR
         [SerializeField] private float _hitRadius = 0.16f;
 
         [Tooltip("На сколько нужно поднять молот над плоскостью, чтобы он снова мог ударить, метры.")]
-        [SerializeField] private float _rearmHeight = 0.09f;
+        [SerializeField] private float _rearmHeight = 0.025f;
 
         [Header("Скорости")]
         [Tooltip("Минимальная общая скорость головки молота, м/с.")]
@@ -25,10 +26,6 @@ namespace RagnarockEditor.VR
         [Tooltip("Минимальная скорость движения ВНИЗ, м/с — удар должен идти сверху.")]
         [SerializeField] private float _minDownSpeed = 0.35f;
 
-        [Header("Антидребезг")]
-        [Tooltip("Кулдаун между ударами по этому барабану, секунды.")]
-        [SerializeField] private float _minHitInterval = 0.12f;
-
         private readonly List<HammerController> _hammers = new List<HammerController>();
         private readonly HashSet<HammerController> _disarmed = new HashSet<HammerController>();
         private readonly Dictionary<HammerController, Vector3> _previousTip =
@@ -36,7 +33,7 @@ namespace RagnarockEditor.VR
 
         private DrumManager _drumManager;
         private float _nextRescan;
-        private float _lastHitTime = -1f;
+
 
         public float HitRadius
         {
@@ -59,7 +56,13 @@ namespace RagnarockEditor.VR
                 _drumController = GetComponentInParent<DrumController>();
         }
 
-        private void Update()
+        private void OnDisable()
+        {
+            _previousTip.Clear();
+            _disarmed.Clear();
+        }
+
+        private void LateUpdate()
         {
             if (_drumController == null)
                 return;
@@ -73,6 +76,14 @@ namespace RagnarockEditor.VR
                 PrunePreviousPositions();
             }
 
+            float dt = Time.unscaledDeltaTime;
+            if (dt <= 0f || dt > 0.1f)
+            {
+                _previousTip.Clear();
+                _disarmed.Clear();
+                return;
+            }
+
             Vector3 center = _drumController.StrikeCenter;
             Vector3 normal = _drumController.transform.up;
             float radiusSqr = _hitRadius * _hitRadius;
@@ -83,10 +94,22 @@ namespace RagnarockEditor.VR
                 if (hammer == null)
                     continue;
 
-                Vector3 headPosition = hammer.HeadPosition;
+                if (!hammer.HasTrackedPose)
+                {
+                    _previousTip.Remove(hammer);
+                    _disarmed.Remove(hammer);
+                    continue;
+                }
+
+                Vector3 headPosition = hammer.ContactPoint(normal);
                 bool hasPrevious = _previousTip.TryGetValue(hammer, out Vector3 previous);
                 _previousTip[hammer] = headPosition;
-                if (!hasPrevious) continue;
+                if (!hasPrevious)
+                {
+                    if (Vector3.Dot(headPosition - center, normal) < _rearmHeight)
+                        _disarmed.Add(hammer);
+                    continue;
+                }
 
                 float currentY = Vector3.Dot(headPosition - center, normal);
                 float previousY = Vector3.Dot(previous - center, normal);
@@ -106,7 +129,7 @@ namespace RagnarockEditor.VR
                 if ((contact - center).sqrMagnitude > radiusSqr)
                     continue;
 
-                Vector3 velocity = hammer.Velocity;
+                Vector3 velocity = (headPosition - previous) / dt;
 
                 if (Vector3.Dot(velocity, normal) > -_minDownSpeed)
                     continue;
@@ -121,17 +144,9 @@ namespace RagnarockEditor.VR
                     continue;
                 }
 
-                // Кулдаун: пересечение «съедаем», чтобы отскок не дал второй удар
-                if (_lastHitTime >= 0f && Time.time - _lastHitTime < _minHitInterval)
-                {
-                    _disarmed.Add(hammer);
-                    continue;
-                }
-
-                _lastHitTime = Time.time;
                 _disarmed.Add(hammer);
-
-                _drumController.RegisterHit(velocity.magnitude);
+                if (!_drumController.TryRegisterHit(velocity.magnitude))
+                    continue;
                 HapticFeedback.TriggerHaptic(hammer.IsRightHand, velocity.magnitude);
 
                 Debug.Log($"[Hit] drum={_drumController.DrumIndex}, vy={velocity.y:F2}, " +
