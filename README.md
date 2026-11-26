@@ -91,7 +91,9 @@ Assets/
   Resources/          локализация, SFX, QuantizeSettings
   Plugins/Android/    libragnaogg.so (arm64) — MP3 → OGG
 NativeBuild/          исходники и NDK-сборка libragnaogg.so (libogg + libvorbis)
-plans/                UI_UX_DESIGN.md — дизайн интерфейса, решения и грабли
+plans/                UI_UX_DESIGN.md — дизайн интерфейса, решения и грабли;
+                      tools/ — compile-check и map-format-check (офлайн-сверка формата карт)
+MAP_FORMAT.md         формат карты Ragnarock: поля info.dat и *.dat, тайминг, грабли
 SESSION_NOTES.md      журнал итераций, параметры для подстройки, полезные команды
 ```
 
@@ -136,7 +138,13 @@ ndk-build NDK_PROJECT_PATH=<abs>/NativeBuild/ogg-android \
 
 ## Документация
 
+- [`MAP_FORMAT.md`](MAP_FORMAT.md) — формат карты Ragnarock, сверенный с настоящей картой и Edda:
+  структура папки, поля `info.dat` и `*.dat`, нота, тайминг в битах и фаза сетки, что игра
+  проверяет, а что игнорирует, и уже наступившие грабли.
 - [`plans/UI_UX_DESIGN.md`](plans/UI_UX_DESIGN.md) — дизайн интерфейса: экраны, состояния, каменные плиты,
   почему панели стоят там, где стоят, и список уже наступивших грабель.
+- [`plans/tools/map-format-check`](plans/tools/map-format-check) — офлайн-проверка формата карт:
+  читает папку настоящей карты Ragnarock нашими DTO, гоняет валидатор и сверяет схему JSON
+  с тем, что пишем мы (`dotnet run "путь/к/карте"`).
 - [`SESSION_NOTES.md`](SESSION_NOTES.md) — журнал итераций, что проверено в шлеме, параметры для быстрой
   подстройки (дистанция/высота барабанов, порог удара, размеры панелей) и полезные adb-команды.
