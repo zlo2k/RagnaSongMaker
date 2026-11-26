@@ -168,7 +168,7 @@ namespace RagnarockEditor.VR
                 try
                 {
                     var quantizer = new BeatQuantizer(settings);
-                    notes = quantizer.Quantize(session.RawHits, bpm, duration, 0f);
+                    notes = quantizer.Quantize(session.RawHits, bpm, duration, song.FirstBeatSeconds);
                 }
                 catch (Exception e)
                 {
@@ -221,7 +221,7 @@ namespace RagnarockEditor.VR
                 }
 
                 // ---------- 4. Обложка ----------
-                bool coverOk = WriteCover(folder, result);
+                WriteCover(folder, result);
 
                 // ---------- 5. info.dat ----------
                 var info = new InfoDatDTO
@@ -233,7 +233,7 @@ namespace RagnarockEditor.VR
                         : session.LevelAuthorName,
                     BeatsPerMinute = bpm,
                     SongFilename = audio.FileName,
-                    CoverImageFilename = coverOk ? "cover.jpg" : string.Empty,
+                    CoverImageFilename = "cover.jpg",
                     EnvironmentName = string.IsNullOrWhiteSpace(session.EnvironmentName)
                         ? "Midgard"
                         : session.EnvironmentName,
@@ -657,8 +657,18 @@ namespace RagnarockEditor.VR
             if (SourceClip != null)
                 return SourceClip;
 
-            if (AudioSourceRef != null)
+            if (AudioSourceRef != null && AudioSourceRef.clip != null)
                 return AudioSourceRef.clip;
+
+            // Основной путь экспорта: клип лежит разжатым в SongPlaybackBootstrap
+            // (загружен с compressed = false как раз для перекодирования в OGG).
+            var playback = FindFirstObjectByType<SongPlaybackBootstrap>();
+            if (playback != null)
+            {
+                var source = playback.GetComponent<AudioSource>();
+                if (source != null && source.clip != null)
+                    return source.clip;
+            }
 
             return null;
         }

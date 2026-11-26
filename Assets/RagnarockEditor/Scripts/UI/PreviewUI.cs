@@ -144,7 +144,8 @@ namespace RagnarockEditor.UI
             _session.QuantizedNotes = _quantizer.Quantize(
                 _session.RawHits,
                 _session.Song.BPM,
-                _session.Song.DurationSeconds
+                _session.Song.DurationSeconds,
+                _session.Song.FirstBeatSeconds
             );
 
             UpdateNotesCount();

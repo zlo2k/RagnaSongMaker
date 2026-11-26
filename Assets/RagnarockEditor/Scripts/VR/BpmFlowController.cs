@@ -468,6 +468,11 @@ namespace RagnarockEditor.VR
                 SongSelectionState.Select(song.FilePath, song.SongName, bpm);
             else
                 SongSelectionState.SetBpm(bpm);
+
+            // Фаза сетки (время первого бита) из анализа. Нужна метроному и квантованию:
+            // без неё трек с интро пишется и экспортируется со сдвигом до половины доли.
+            if (LastResult != null)
+                song.FirstBeatSeconds = Mathf.Max(0f, LastResult.FirstBeatOffset);
         }
 
         private float ResolveCurrentBpm()

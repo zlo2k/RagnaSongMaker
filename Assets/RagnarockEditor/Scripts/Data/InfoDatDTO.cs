@@ -11,8 +11,12 @@ namespace RagnarockEditor.Data
     [Serializable]
     public class InfoDatDTO
     {
+        /// <summary>
+        /// Версия формата. Все карты RagnaCustoms/Edda пишут "1"; игра значение не сверяет,
+        /// но держим его одинаковым с экосистемой.
+        /// </summary>
         [JsonProperty("_version")]
-        public string Version = "2.0.0";
+        public string Version = "1";
 
         [JsonProperty("_songName")]
         public string SongName = "";
@@ -25,6 +29,13 @@ namespace RagnarockEditor.Data
 
         [JsonProperty("_levelAuthorName")]
         public string LevelAuthorName = "";
+
+        /// <summary>
+        /// Явный контент. В формате Ragnarock это СТРОКА ("false"/"true"), а не bool —
+        /// так пишут и Edda, и карты с RagnaCustoms.
+        /// </summary>
+        [JsonProperty("_explicit")]
+        public string Explicit = "false";
 
         /// <summary>
         /// Главный параметр для расчета времени спавна рун.
@@ -66,6 +77,13 @@ namespace RagnarockEditor.Data
         [JsonProperty("_songApproximativeDuration")]
         public int SongApproximativeDuration;
 
+        /// <summary>
+        /// Данные редактора: кто и чем правил карту. Игра не читает,
+        /// но в картах RagnaCustoms/Edda блок есть — оставляем для совместимости с инструментами.
+        /// </summary>
+        [JsonProperty("_customData")]
+        public InfoCustomData CustomData = new InfoCustomData();
+
         [JsonProperty("_difficultyBeatmapSets")]
         public List<DifficultyBeatmapSet> DifficultyBeatmapSets = new List<DifficultyBeatmapSet>();
 
@@ -73,7 +91,7 @@ namespace RagnarockEditor.Data
         /// Добавляет карту сложности в стандартный набор (Standard).
         /// </summary>
         public void AddDifficulty(string difficultyName, int difficultyRank, string beatmapFilename,
-            float noteJumpSpeed = 14f, float noteJumpOffset = 0f)
+            float noteJumpSpeed = 15f, float noteJumpOffset = 0f)
         {
             // Ищем существующий набор "Standard" или создаём новый
             DifficultyBeatmapSet standardSet = null;
@@ -120,6 +138,9 @@ namespace RagnarockEditor.Data
     [Serializable]
     public class DifficultyBeatmap
     {
+        /// <summary>
+        /// Имя сложности. Ragnarock/Edda знают три: Easy, Normal, Hard.
+        /// </summary>
         [JsonProperty("_difficulty")]
         public string Difficulty = "Normal";
 
@@ -132,10 +153,45 @@ namespace RagnarockEditor.Data
         [JsonProperty("_beatmapFilename")]
         public string BeatmapFilename = "Normal.dat";
 
+        /// <summary>
+        /// Скорость подлёта рун (Note Speed в игре). 15 — средняя по документации Edda,
+        /// максимум, который разрешает игра, — 30.
+        /// </summary>
         [JsonProperty("_noteJumpMovementSpeed")]
-        public float NoteJumpMovementSpeed = 14f;
+        public float NoteJumpMovementSpeed = 15f;
 
         [JsonProperty("_noteJumpStartBeatOffset")]
         public float NoteJumpStartBeatOffset = 0f;
+    }
+
+    /// <summary>
+    /// _customData info.dat: авторы-контрибьюторы и редактор, которым карта сделана.
+    /// </summary>
+    [Serializable]
+    public class InfoCustomData
+    {
+        [JsonProperty("_contributors")]
+        public List<string> Contributors = new List<string>();
+
+        [JsonProperty("_editors")]
+        public EditorsInfo Editors = new EditorsInfo();
+    }
+
+    [Serializable]
+    public class EditorsInfo
+    {
+        /// <summary>Ключ — имя редактора, ровно как в картах Edda/MMA2.</summary>
+        [JsonProperty("RagnaSongMaker")]
+        public EditorVersion RagnaSongMaker = new EditorVersion();
+
+        [JsonProperty("_lastEditedBy")]
+        public string LastEditedBy = "RagnaSongMaker";
+    }
+
+    [Serializable]
+    public class EditorVersion
+    {
+        [JsonProperty("version")]
+        public string Version = "1.0";
     }
 }

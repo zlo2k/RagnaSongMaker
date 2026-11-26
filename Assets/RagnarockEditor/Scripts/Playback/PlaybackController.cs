@@ -498,7 +498,8 @@ namespace RagnarockEditor.Playback
             }
 
             BeatQuantizer quantizer = new BeatQuantizer(settings);
-            List<Note> notes = quantizer.Quantize(_session.RawHits, _bpm, duration);
+            float phase = _session.Song != null ? _session.Song.FirstBeatSeconds : 0f;
+            List<Note> notes = quantizer.Quantize(_session.RawHits, _bpm, duration, phase);
 
             Debug.Log($"[PlaybackController] Ноты не были готовы — квантовано {_session.RawHits.Count} ударов " +
                       $"→ {notes.Count} нот (BPM={_bpm:0.#}).");

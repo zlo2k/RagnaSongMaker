@@ -120,7 +120,8 @@ namespace RagnarockEditor.UI
                 SongName = System.IO.Path.GetFileNameWithoutExtension(_selectedFilePath),
                 AuthorName = "Unknown",
                 BPM = result.PrimaryBPM,
-                DurationSeconds = clip.length
+                DurationSeconds = clip.length,
+                FirstBeatSeconds = result.FirstBeatOffset
             };
 
             if (_statusText != null)
