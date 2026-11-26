@@ -60,7 +60,9 @@ namespace RagnarockEditor.Quantization
         }
 
         /// <summary>
-        /// Конвертирует время в секундах в биты.
+        /// Конвертирует время в секундах в биты ОТНОСИТЕЛЬНО первого бита.
+        /// Для _time в карте не годится: там абсолютные биты от начала песни
+        /// (см. BeatQuantizer, шаг 2).
         /// </summary>
         public float SecondsToBeats(float timeSeconds)
         {
@@ -68,7 +70,7 @@ namespace RagnarockEditor.Quantization
         }
 
         /// <summary>
-        /// Конвертирует биты в секунды.
+        /// Конвертирует биты (относительно первого бита) в секунды.
         /// </summary>
         public float BeatsToSeconds(float beats)
         {

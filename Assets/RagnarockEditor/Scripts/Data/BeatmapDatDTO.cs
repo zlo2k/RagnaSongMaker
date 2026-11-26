@@ -5,36 +5,40 @@ using Newtonsoft.Json;
 namespace RagnarockEditor.Data
 {
     /// <summary>
-    /// DTO для файла Beatmap.dat — содержит массив нот (_notes).
-    /// Ragnarock игнорирует _obstacles и _events, парсит только _notes.
+    /// DTO для файла карты сложности (&lt;Difficulty&gt;.dat) — массив нот (_notes).
+    /// Содержимое парсит Ragnarock; _events и _obstacles игра не читает, но парсер
+    /// ждёт их как массивы (см. SESSION_NOTES, сверка с реальной картой divadance).
     /// </summary>
     [Serializable]
     public class BeatmapDatDTO
     {
+        /// <summary>
+        /// Версия формата карты. Edda и все карты с RagnaCustoms пишут "1";
+        /// игру значение не проверяет, но держим его таким же, как в экосистеме.
+        /// </summary>
         [JsonProperty("_version")]
-        public string Version = "2.0.0";
+        public string Version = "1";
 
         [JsonProperty("_customData")]
         public CustomData CustomDataField = new CustomData();
 
         /// <summary>
-        /// Игнорируется движком Ragnarock. Оставляем пустым при сериализации.
+        /// Ragnarock события не использует, но поле должно быть массивом.
+        /// ВАЖНО: не помечать [NonSerialized] — Newtonsoft такие поля не пишет.
         /// </summary>
         [JsonProperty("_events")]
-        [NonSerialized]
         public List<object> Events = new List<object>();
 
         /// <summary>
-        /// Массив нот (рун) — единственное, что парсит Ragnarock.
+        /// Массив нот (рун) — единственное, что реально читает Ragnarock.
         /// </summary>
         [JsonProperty("_notes")]
         public List<Note> Notes = new List<Note>();
 
         /// <summary>
-        /// Игнорируется движком Ragnarock. Оставляем пустым при сериализации.
+        /// Ragnarock препятствия не использует, но поле должно быть массивом.
         /// </summary>
         [JsonProperty("_obstacles")]
-        [NonSerialized]
         public List<object> Obstacles = new List<object>();
 
         /// <summary>
@@ -68,19 +72,21 @@ namespace RagnarockEditor.Data
         public int LineIndex;
 
         /// <summary>
-        /// Высота ноты. В Ragnarock ВСЕГДА 0.
+        /// Высота ноты. Раскладка Ragnarock одномерная: руны едут к четырём барабанам
+        /// в один ряд, и _lineLayer игра не использует (принимает 0..3).
+        /// В картах Edda/MMA2 здесь всегда 1 — пишем 1, чтобы файл был неотличим от них.
         /// </summary>
         [JsonProperty("_lineLayer")]
-        public int LineLayer = 0;
+        public int LineLayer = 1;
 
         /// <summary>
-        /// Тип ноты. 0 или 1 (цвет молота не разделяется).
+        /// Тип ноты. Ragnarock принимает только 0 (любое другое значение — невалидная карта).
         /// </summary>
         [JsonProperty("_type")]
         public int Type = 0;
 
         /// <summary>
-        /// Направление удара. В Ragnarock ВСЕГДА 1 (удар вниз).
+        /// Направление удара. Ragnarock принимает только 1.
         /// </summary>
         [JsonProperty("_cutDirection")]
         public int CutDirection = 1;
@@ -94,7 +100,7 @@ namespace RagnarockEditor.Data
         {
             Time = time;
             LineIndex = Math.Clamp(lineIndex, 0, 3);
-            LineLayer = 0;
+            LineLayer = 1;
             Type = 0;
             CutDirection = 1;
         }
@@ -113,6 +119,10 @@ namespace RagnarockEditor.Data
         }
     }
 
+    /// <summary>
+    /// _customData карты сложности. Тайминговые изменения (BPMChanges) и закладки
+    /// редактора Ragnarock не читает, но поля должны быть массивами.
+    /// </summary>
     [Serializable]
     public class CustomData
     {
@@ -120,7 +130,9 @@ namespace RagnarockEditor.Data
         public float Time = 0f;
 
         [JsonProperty("_BPMChanges")]
-        [NonSerialized]
         public List<object> BPMChanges = new List<object>();
+
+        [JsonProperty("_bookmarks")]
+        public List<object> Bookmarks = new List<object>();
     }
 }

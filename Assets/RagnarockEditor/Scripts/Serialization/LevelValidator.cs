@@ -73,6 +73,10 @@ namespace RagnarockEditor.Serialization
             if (info.SongApproximativeDuration <= 0)
                 result.AddError("SongApproximativeDuration должен быть > 0.");
 
+            // В формате Ragnarock это СТРОКА ("false"/"true"), не bool.
+            if (info.Explicit != "false" && info.Explicit != "true")
+                result.AddWarning($"_explicit='{info.Explicit}' — в картах Ragnarock это строка \"false\"/\"true\".");
+
             if (info.DifficultyBeatmapSets.Count == 0)
                 result.AddError("Нет ни одного набора сложности (DifficultyBeatmapSets).");
 
@@ -81,6 +85,10 @@ namespace RagnarockEditor.Serialization
                 if (set.DifficultyBeatmaps.Count == 0)
                     result.AddError($"Набор '{set.BeatmapCharacteristicName}' не содержит карт сложности.");
 
+                if (set.DifficultyBeatmaps.Count > 3)
+                    result.AddWarning($"Набор '{set.BeatmapCharacteristicName}': Ragnarock показывает до 3 сложностей, " +
+                                      $"а тут {set.DifficultyBeatmaps.Count}.");
+
                 foreach (var diff in set.DifficultyBeatmaps)
                 {
                     if (diff.DifficultyRank < 1 || diff.DifficultyRank > 10)
@@ -88,6 +96,9 @@ namespace RagnarockEditor.Serialization
 
                     if (string.IsNullOrWhiteSpace(diff.BeatmapFilename))
                         result.AddError($"BeatmapFilename пуст для сложности '{diff.Difficulty}'.");
+
+                    if (diff.NoteJumpMovementSpeed <= 0f)
+                        result.AddError($"NoteJumpMovementSpeed = {diff.NoteJumpMovementSpeed} для '{diff.Difficulty}'. Должен быть > 0.");
                 }
             }
 
@@ -114,6 +125,13 @@ namespace RagnarockEditor.Serialization
                 result.AddError("Массив _notes пуст. Уровень должен содержать хотя бы одну ноту.");
             }
 
+            // Игра ждёт эти массивы даже пустыми (иначе карта может не загрузиться).
+            if (beatmap.Events == null)
+                result.AddError("Массив _events отсутствует — должен быть хотя бы [].");
+
+            if (beatmap.Obstacles == null)
+                result.AddError("Массив _obstacles отсутствует — должен быть хотя бы [].");
+
             // Проверяем каждую ноту
             var seenNotes = new HashSet<(float time, int lineIndex)>();
             
@@ -125,17 +143,20 @@ namespace RagnarockEditor.Serialization
                 if (note.LineIndex < 0 || note.LineIndex > 3)
                     result.AddError($"Нота #{i}: _lineIndex={note.LineIndex} — должен быть 0-3.");
 
-                // _lineLayer: всегда 0
-                if (note.LineLayer != 0)
-                    result.AddError($"Нота #{i}: _lineLayer={note.LineLayer} — должен быть 0 (Ragnarock).");
+                // _lineLayer: игра принимает 0-3, но раскладка одномерная;
+                // карты Edda/MMA2 всегда на слое 1.
+                if (note.LineLayer < 0 || note.LineLayer > 3)
+                    result.AddError($"Нота #{i}: _lineLayer={note.LineLayer} — должен быть 0-3.");
+                else if (note.LineLayer != 1)
+                    result.AddWarning($"Нота #{i}: _lineLayer={note.LineLayer} — в картах Ragnarock обычно 1.");
 
-                // _type: 0 или 1
-                if (note.Type != 0 && note.Type != 1)
-                    result.AddError($"Нота #{i}: _type={note.Type} — должен быть 0 или 1.");
+                // _type: только 0
+                if (note.Type != 0)
+                    result.AddError($"Нота #{i}: _type={note.Type} — Ragnarock принимает только 0.");
 
-                // _cutDirection: всегда 1
+                // _cutDirection: только 1
                 if (note.CutDirection != 1)
-                    result.AddWarning($"Нота #{i}: _cutDirection={note.CutDirection} — обычно 1 для Ragnarock.");
+                    result.AddError($"Нота #{i}: _cutDirection={note.CutDirection} — Ragnarock принимает только 1.");
 
                 // _time: > 0 и в пределах песни
                 if (note.Time < 0)

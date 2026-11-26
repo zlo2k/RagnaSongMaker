@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Офлайн-проверка формата карт Ragnarock: читает папку карты нашими DTO,
+    прогоняет LevelValidator и сверяет набор ключей JSON с тем, что мы бы записали.
+
+    Запуск (из этой папки):
+      dotnet run "F:\путь\к\папке\карты"
+    Если Unity лежит в другом месте:
+      dotnet run -p:UnityManaged="D:\Unity\6000.5.0f1\Editor\Data\Managed" "путь"
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>9</LangVersion>
+    <AssemblyName>MapFormatCheck</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>CS0169;CS0414;CS0649;CS0108;CS0162;CS0219</NoWarn>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\..'))</RepoRoot>
+    <UnityManaged Condition="'$(UnityManaged)' == ''">F:\unity\hub\6000.5.0f1\Editor\Data\Managed</UnityManaged>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="$(RepoRoot)\Assets\RagnarockEditor\Scripts\Data\BeatmapDatDTO.cs" />
+    <Compile Include="$(RepoRoot)\Assets\RagnarockEditor\Scripts\Data\InfoDatDTO.cs" />
+    <Compile Include="$(RepoRoot)\Assets\RagnarockEditor\Scripts\Serialization\LevelValidator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(UnityManaged)\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(UnityManaged)\UnityEngine\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <Target Name="CheckReferences" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(UnityManaged)\Newtonsoft.Json.dll')"
+           Text="Не найден $(UnityManaged)\Newtonsoft.Json.dll — укажи путь к Managed через -p:UnityManaged=..." />
+  </Target>
+</Project>

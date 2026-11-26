@@ -61,6 +61,12 @@ Logs/
 /NativeBuild/**/*.o
 /NativeBuild/**/*.a
 
+# Офлайн-проверка формата карт (dotnet): артефакты сборки
+/plans/tools/map-format-check/bin/
+/plans/tools/map-format-check/obj/
+# ...но сам проект нужен в репозитории (общий *.csproj выше — от Unity)
+!/plans/tools/map-format-check/*.csproj
+
 # Layer Lab GUI Basic Button Pack — пакет из Asset Store,
 # его нельзя распространять в открытом репозитории.
 # Импортируется локально (Window → Package Manager → My Assets).

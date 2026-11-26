@@ -27,6 +27,15 @@ namespace RagnarockEditor.Data
         public float DurationSeconds;
 
         /// <summary>
+        /// Время первого бита в секундах от начала файла — фаза битовой сетки.
+        /// Приходит из анализа BPM (BPMDetector.FindFirstBeat).
+        /// 0 — трек начинается ровно с бита либо фаза неизвестна.
+        /// Если трек начинается с интро/затакта, без этой фазы сетка уезжает
+        /// относительно музыки (до половины доли на каждую ноту).
+        /// </summary>
+        public float FirstBeatSeconds;
+
+        /// <summary>
         /// Вычисляет длительность песни в битах.
         /// </summary>
         public float DurationBeats => DurationSeconds * BPM / 60f;

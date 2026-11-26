@@ -404,7 +404,14 @@ namespace RagnarockEditor.Recording
             if (beatInterval <= 0.01f)
                 return;
 
-            int beatIndex = Mathf.FloorToInt(Mathf.Max(0f, songTime) / beatInterval);
+            // Фаза сетки: первый бит трека может быть не в 0 (интро/затакт).
+            // Без фазы метроном щёлкает мимо музыки, и запись «уезжает» вместе с ним.
+            float phase = _session != null && _session.Song != null ? _session.Song.FirstBeatSeconds : 0f;
+            float sinceBeat = songTime - phase;
+            if (sinceBeat < 0f)
+                return;
+
+            int beatIndex = Mathf.FloorToInt(sinceBeat / beatInterval);
             if (beatIndex <= _lastMetronomeBeat)
                 return;
 

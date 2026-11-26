@@ -54,8 +54,11 @@ namespace RagnarockEditor.Quantization
                         snappedTime = _grid.SnapToGrid(hit.TimeSeconds);
                 }
 
-                // Шаг 2: Конвертация в биты
-                float timeInBeats = _grid.SecondsToBeats(snappedTime);
+                // Шаг 2: Конвертация в биты.
+                // _time в карте — АБСОЛЮТНЫЕ биты от начала песни (time_sec = _time*60/BPM),
+                // поэтому фазу сетки (firstBeatOffset) здесь НЕ вычитаем: она уже учтена
+                // в snappedTime. Иначе трек с интро уехал бы на фазу.
+                float timeInBeats = snappedTime * _grid.BPM / 60f;
 
                 // Шаг 3: Создаём ноту
                 var note = new Note(timeInBeats, hit.DrumIndex);

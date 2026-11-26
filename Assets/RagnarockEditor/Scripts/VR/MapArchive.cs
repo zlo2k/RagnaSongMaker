@@ -39,6 +39,10 @@ namespace RagnarockEditor.VR
             {
                 using var file = File.Create(path);
                 using var zip = new ZipArchive(file, ZipArchiveMode.Create);
+                // Файлы кладём в корень архива — так же, как Edda («Export Map») и как ждёт
+                // RagnaCustoms при загрузке. Архив divadance.zip пришёл с вложенной папкой,
+                // но игра распаковку не делает: важно, чтобы после распаковки в
+                // CustomSongs/<Имя>/ лежали info.dat, *.dat, song.ogg, cover.jpg.
                 foreach (string source in Directory.GetFiles(folder))
                 {
                     if ((File.GetAttributes(source) & FileAttributes.ReparsePoint) != 0) continue;
